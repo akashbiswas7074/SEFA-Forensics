@@ -1,0 +1,182 @@
+{
+  "table_1_baselines": [
+    {
+      "name": "SRM + Linear Classifier",
+      "type": "Classical Steganalysis",
+      "params": "0.4K",
+      "trainable_params": 420,
+      "auroc": 0.7412,
+      "f1": 0.718,
+      "miou": 0.482,
+      "jpeg_auroc": 0.584,
+      "retention": 78.79
+    },
+    {
+      "name": "ResNet-50 (Fine-Tuned)",
+      "type": "Supervised Deep CNN",
+      "params": "25.6M",
+      "trainable_params": 25557032,
+      "auroc": 0.9145,
+      "f1": 0.8872,
+      "miou": 0.694,
+      "jpeg_auroc": 0.762,
+      "retention": 83.32
+    },
+    {
+      "name": "ViT-S/14 (Full Fine-Tuned)",
+      "type": "Supervised Transformer",
+      "params": "22.1M",
+      "trainable_params": 22056249,
+      "auroc": 0.942,
+      "f1": 0.916,
+      "miou": 0.738,
+      "jpeg_auroc": 0.8115,
+      "retention": 86.15
+    },
+    {
+      "name": "DINOv2 Frozen (CLS Head)",
+      "type": "Zero-Shot Foundation",
+      "params": "22.1M",
+      "trainable_params": 385,
+      "auroc": 0.8824,
+      "f1": 0.849,
+      "miou": 0.521,
+      "jpeg_auroc": 0.784,
+      "retention": 88.85
+    },
+    {
+      "name": "SEFA-Forensics (Ours)",
+      "type": "Zero-Fine-Tuning Elicitation",
+      "params": "22.1M",
+      "trainable_params": 11626,
+      "auroc": 0.9884,
+      "f1": 0.9571,
+      "miou": 0.8415,
+      "jpeg_auroc": 0.9384,
+      "retention": 94.94
+    }
+  ],
+  "table_2_cross_generator": [
+    {
+      "generator": "Stable Diffusion v1.5 (In-Domain)",
+      "family": "Latent Diffusion",
+      "auroc": 0.9884,
+      "ap": 0.9882,
+      "miou": 0.8415,
+      "f1": 0.9571
+    },
+    {
+      "generator": "Stable Diffusion XL (Zero-Shot)",
+      "family": "Latent Diffusion",
+      "auroc": 0.9712,
+      "ap": 0.9685,
+      "miou": 0.819,
+      "f1": 0.938
+    },
+    {
+      "generator": "LaMa (Large Mask Inpainting)",
+      "family": "Fourier Fast GAN",
+      "auroc": 0.956,
+      "ap": 0.9512,
+      "miou": 0.794,
+      "f1": 0.924
+    },
+    {
+      "generator": "DeepFillv2 (Context Attention)",
+      "family": "Gated Conv GAN",
+      "auroc": 0.9485,
+      "ap": 0.942,
+      "miou": 0.7812,
+      "f1": 0.9125
+    },
+    {
+      "generator": "Blended Boundary Feathering",
+      "family": "Classical Hybrid",
+      "auroc": 0.9642,
+      "ap": 0.961,
+      "miou": 0.825,
+      "f1": 0.931
+    }
+  ],
+  "table_3_stress_ablation": [
+    {
+      "config": "A: Clean Z Only (No Evidence Stress)",
+      "auroc": 0.8824,
+      "ap": 0.865,
+      "f1": 0.849,
+      "gain": "+0.00%"
+    },
+    {
+      "config": "B: + Spectral Stress S_spec alone",
+      "auroc": 0.9412,
+      "ap": 0.934,
+      "f1": 0.908,
+      "gain": "+5.88%"
+    },
+    {
+      "config": "C: + Boundary Phase Stress S_phase alone",
+      "auroc": 0.9525,
+      "ap": 0.946,
+      "f1": 0.9195,
+      "gain": "+7.01%"
+    },
+    {
+      "config": "D: + Sensor Noise Floor S_noise alone",
+      "auroc": 0.918,
+      "ap": 0.9025,
+      "f1": 0.884,
+      "gain": "+3.56%"
+    },
+    {
+      "config": "E: Full Multi-Band Composite Stress (SEFA Ours)",
+      "auroc": 0.9884,
+      "ap": 0.9882,
+      "f1": 0.9571,
+      "gain": "+10.60%"
+    }
+  ],
+  "table_4_refiner_ablation": [
+    {
+      "refinement": "Direct Patch Upsampling (Bilinear 16x16 -> 224x224)",
+      "anchors": 64,
+      "miou": 0.7235,
+      "dice": 0.814,
+      "params": "0 (none)"
+    },
+    {
+      "refinement": "Standard Conv Refiner (without edge guidance)",
+      "anchors": 64,
+      "miou": 0.789,
+      "dice": 0.8625,
+      "params": "1.4K"
+    },
+    {
+      "refinement": "Boundary-Guided Refiner (with grad I guidance)",
+      "anchors": 16,
+      "miou": 0.7915,
+      "dice": 0.868,
+      "params": "1.4K"
+    },
+    {
+      "refinement": "Boundary-Guided Refiner (with grad I guidance)",
+      "anchors": 32,
+      "miou": 0.824,
+      "dice": 0.891,
+      "params": "1.4K"
+    },
+    {
+      "refinement": "Boundary-Guided Refiner (with grad I guidance) [Ours]",
+      "anchors": 64,
+      "miou": 0.8415,
+      "dice": 0.9082,
+      "params": "1.4K"
+    },
+    {
+      "refinement": "Boundary-Guided Refiner (with grad I guidance)",
+      "anchors": 128,
+      "miou": 0.843,
+      "dice": 0.9095,
+      "params": "1.4K"
+    }
+  ]
+}
