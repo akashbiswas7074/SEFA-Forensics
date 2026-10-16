@@ -117,12 +117,19 @@ def download_file(url: str, dest_path: str, min_size: int = 1000000):
 
     print(f"[DOWNLOAD] Fetching {url} -> {dest_path}...")
     cmd = [
-        "curl", "-L", "-C", "-",
-        "--retry", "5", "--retry-delay", "2",
+        "curl", "--http1.1", "-L", "-C", "-",
+        "--retry", "10", "--retry-delay", "2",
         "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "-o", dest_path, url
     ]
-    subprocess.run(cmd, check=True)
+    max_retries = 20
+    for attempt in range(max_retries):
+        res = subprocess.run(cmd)
+        if res.returncode == 0:
+            break
+        print(f"  [RETRY] Transfer closed (code {res.returncode}), resuming attempt {attempt+1}/{max_retries}...")
+        time.sleep(2)
+
     print(f"[COMPLETE] Downloaded {dest_path} ({os.path.getsize(dest_path)/(1024*1024):.1f} MB).")
     return dest_path
 
