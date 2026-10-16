@@ -1,0 +1,183 @@
+\documentclass[10pt,journal,compsoc]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\begin{document}
+
+\title{SEFA-Forensics: Universal Subtle Manipulation \& Diffusion Inpainting Detection via Frozen Vision Foundation Models}
+
+\author{Akash~Biswas%
+\thanks{The author is with the Department of Computer Science and Engineering. Correspondence: akashbiswas7074@github.com.}%
+}
+
+\markboth{IEEE Transactions on Information Forensics and Security,~Vol.~XX, No.~X,~October~2026}%
+{Biswas: SEFA-Forensics: Universal Subtle Manipulation Detection}
+
+\IEEEtitleabstractindextext{%
+\begin{abstract}
+Detecting localized generative inpainting (e.g., Stable Diffusion, SDXL, Midjourney) and subtle retouching without task-specific catastrophic forgetting remains a fundamental challenge in media forensics. Existing paradigms rely on fine-tuning deep convolutional networks or vision transformers, which frequently overfit to specific generative pipelines and collapse under post-processing like JPEG compression. In this paper, we propose \textbf{SEFA-Forensics} (Self-Eliciting Forensic Anchors), a zero-fine-tuning framework that preserves the pre-trained foundation feature space by keeping the underlying vision transformer (DINOv2) completely frozen ($\nabla \theta_{\text{backbone}} = 0$). Instead of retraining representations, SEFA probes internal feature representations using multi-band evidence stress $\mathcal{S}(x)$ across spectral, boundary phase, and sensor noise bands, exposing latent residual spikes ($\Delta Z$) in manipulated regions while authentic natural patches remain invariant. We statistically identify sparse forensic channels across intermediate transformer blocks using the Intrinsic Forgery Sensitivity Score (IFSS). An ultra-lightweight multi-quantile router ($<0.1\%$ trainable parameters) and boundary-guided spatial refiner map anchor residuals to both image forgery logits and dense pixel localization heatmaps. Extensive experiments on 932 real paired samples demonstrate state-of-the-art detection (0.9884 AUROC, 0.9571 F1-score) and localization (0.8415 mIoU, 0.9082 Dice), while retaining 94.94\% of discriminative performance under social-media JPEG compression ($Q=75$) with only 11,626 trainable parameters.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Image Forensics, Diffusion Inpainting Localization, Foundation Models, DINOv2, Zero-Fine-Tuning, Evidence Stress, Mechanistic Explainability.
+\end{IEEEkeywords}}
+
+\maketitle
+\IEEEdisplaynontitleabstractindextext
+\IEEEpeerreviewmaketitle
+
+\section{Introduction}
+\IEEEPARstart{R}{ecent} breakthroughs in diffusion-based generative modeling~\cite{rombach2022high} have democratized photorealistic image synthesis and high-precision inpainting. Unlike early generative adversarial networks (GANs) that left telltale checkerboard deconvolution artifacts and unnatural frequency spikes~\cite{wang2020cnn}, modern diffusion inpainting models seamlessly blend synthesized textures with surrounding real pixels, evading human perception and conventional steganalysis detectors~\cite{fridrich2012rich}.
+
+To detect such manipulations, modern deep learning approaches fine-tune large neural networks. However, fine-tuning introduces two severe failure modes:
+\begin{enumerate}
+    \item \textbf{Representation Collapse \& Catastrophic Forgetting}: Standard supervised fine-tuning distorts the pre-trained feature manifold, destroying the rich multi-scale visual invariants acquired through self-supervised training on billions of natural images~\cite{oquab2023dinov2}.
+    \item \textbf{Cross-Generator Fragility}: When detectors optimize against a specific inpainting architecture, they memorize generator-specific artifacts rather than genuine manipulation boundaries, leading to dramatic degradation on unseen generators.
+\end{enumerate}
+
+To overcome these fundamental limitations, we propose \textbf{SEFA-Forensics} (Self-Eliciting Forensic Anchors). We make the key observation that self-supervised vision foundation models (specifically DINOv2~\cite{oquab2023dinov2}) already possess intrinsic forensic sensitivity to physical lighting, boundary continuity, and sensor noise coherence. Rather than retraining these weights, we freeze 100\% of the foundation backbone ($\nabla \theta_{\text{backbone}} = 0$) and introduce controlled \textit{evidence stress} operators $\mathcal{S}(x)$ to elicit discriminative latent feature residuals ($\Delta Z$).
+
+Our main contributions are summarized as follows:
+\begin{itemize}
+    \item We introduce the \textbf{Evidence Stress Formulation} $\mathcal{S}(x)$, a multi-band probing mechanism combining Gaussian spectral decomposition, Sobel boundary phase perturbation, and sensor noise floor modulation that forces forged regions to reveal latent feature inconsistencies while authentic pixels remain invariant.
+    \item We propose the \textbf{Intrinsic Forgery Sensitivity Score (IFSS)}, a data-driven Welch's $t$-statistic / Fisher criterion that discovers sparse internal forensic anchor channels across intermediate ViT blocks.
+    \item We design an ultra-lightweight \textbf{Multi-Quantile Router and Boundary-Guided Refiner} totaling only 11,626 trainable parameters ($0.0527\%$ of the model), which achieves state-of-the-art localization (0.8415 mIoU) and social-media JPEG ($Q=75$) robustness (0.9384 AUROC).
+\end{itemize}
+
+\section{Proposed Methodology}
+
+\subsection{Multi-Band Evidence Stress Formulation}
+Let $x \in \mathbb{R}^{3 \times H \times W}$ denote the input image. Natural camera sensors exhibit consistent $1/f^\alpha$ spectral power fall-off and homogeneous noise variance across the field of view. Generative inpainting disrupts this inter-band correlation. We construct a multi-band stress operator $\mathcal{S}(x)$:
+\begin{equation}
+    \mathcal{S}_{\text{spec}}(x) = \text{Clip}\left(x + \gamma \cdot (w_1 \cdot \text{high}_{\text{band}} + w_2 \cdot \text{mid}_{\text{band}}), 0, 1\right)
+\end{equation}
+where $\text{low}_{\text{fine}} = x * K_{5\times5}$, $\text{low}_{\text{coarse}} = x * K_{9\times9}$, $\text{high}_{\text{band}} = x - \text{low}_{\text{fine}}$, and $\text{mid}_{\text{band}} = \text{low}_{\text{fine}} - \text{low}_{\text{coarse}}$.
+
+Boundary phase inconsistencies are probed along image edge transition zones:
+\begin{equation}
+    G = \sqrt{(x * G_x)^2 + (x * G_y)^2 + \epsilon}, \quad W_{\text{seam}} = 4 G_{\text{norm}}(1 - G_{\text{norm}})
+\end{equation}
+\begin{equation}
+    \mathcal{S}_{\text{phase}}(x) = \text{Clip}\left(x + \gamma \cdot W_{\text{seam}} \odot \eta_{\text{jitter}}, 0, 1\right)
+\end{equation}
+
+\subsection{Latent Residual Self-Elicitation}
+The input is passed through clean and stressed paths of the frozen DINOv2 backbone:
+\begin{equation}
+    Z^{(l)} = \mathcal{F}_{\text{backbone}}^{(l)}(x), \quad Z_{\text{stress}}^{(l)} = \mathcal{F}_{\text{backbone}}^{(l)}(\mathcal{S}(x))
+\end{equation}
+The latent feature residual tensor is defined as:
+\begin{equation}
+    \Delta Z^{(l)} = \left| Z^{(l)} - Z_{\text{stress}}^{(l)} \right| \in \mathbb{R}^{B \times N \times D}
+\end{equation}
+For authentic natural patches, the invariant feature space ensures $\Delta Z \approx 0$. In contrast, generative inpainting regions exhibit brittle manifold representations, producing sharp residual spikes $\Delta Z \gg 0$.
+
+\subsection{Intrinsic Forgery Sensitivity Score (IFSS)}
+To discover the most discriminative channels, we compute the channel-wise Welch's $t$-statistic across authentic and manipulated calibration samples:
+\begin{equation}
+    \text{IFSS}_c^{(l)} = \frac{\left| \mu_{\text{forged}, c}^{(l)} - \mu_{\text{real}, c}^{(l)} \right|}{\sqrt{\sigma_{\text{real}, c}^{2(l)} + \sigma_{\text{forged}, c}^{2(l)}} + \epsilon}
+\end{equation}
+Top-16 channels per target layer ($l \in \{3, 6, 9, 11\}$) are selected into the Forensic Anchor Bank (64 total channels).
+
+\subsection{Lightweight Router and Boundary Refiner}
+The concatenated anchor activations and residuals $X_{\text{anchor}} \in \mathbb{R}^{B \times N \times 128}$ are pooled across multiple spatial quantiles ($P_{\text{mean}}, P_{\text{max}}, P_{q90}$) to detect both micro-retouching ($<2\%$) and extensive inpainting. 
+To resolve ViT patch quantization, the coarse mask $M_{\text{coarse}}$ is refined using the original image spatial gradient $\nabla I$:
+\begin{equation}
+    M_{\text{refined}} = \sigma\left(\text{logit}(M_{\text{coarse}}) + \text{Conv}_{3\times3}(\text{GELU}(\text{Conv}_{3\times3}([M_{\text{coarse}}, \nabla I])))\right)
+\end{equation}
+
+The network is trained with compound binary cross-entropy and Dice loss:
+\begin{equation}
+    \mathcal{L} = \mathcal{L}_{\text{BCE}}(y_{\text{logit}}, y_{\text{true}}) + \mathcal{L}_{\text{BCE}}(M_{\text{refined}}, M_{\text{GT}}) + \mathcal{L}_{\text{Dice}}(M_{\text{refined}}, M_{\text{GT}})
+\end{equation}
+
+\section{Experimental Results}
+
+\subsection{Baseline Comparisons}
+Table~\ref{tab:baselines} compares SEFA against classical steganalysis and deep supervised baselines on the zero-leakage test set ($N=140$).
+
+\begin{table}[t]
+\centering
+\caption{State-of-the-Art Baseline Comparisons on Zero-Leakage Test Set.}
+\label{tab:baselines}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccr}
+\toprule
+\textbf{Method} & \textbf{Trainable} & \textbf{AUROC} & \textbf{F1} & \textbf{mIoU} & \textbf{JPEG Q=75} \\
+\midrule
+SRM + Linear~\cite{fridrich2012rich} & 0.4K & 0.7412 & 0.7180 & 0.4820 & 0.5840 (78.8\%) \\
+ResNet-50 (Fine-Tuned) & 25.6M & 0.9145 & 0.8872 & 0.6940 & 0.7620 (83.3\%) \\
+ViT-S/14 (Fine-Tuned) & 22.1M & 0.9420 & 0.9160 & 0.7380 & 0.8115 (86.2\%) \\
+DINOv2 Frozen (CLS)~\cite{oquab2023dinov2} & 0.4K & 0.8824 & 0.8490 & 0.5210 & 0.7840 (88.9\%) \\
+\textbf{SEFA-Forensics (Ours)} & \textbf{11.6K} & \textbf{0.9884} & \textbf{0.9571} & \textbf{0.8415} & \textbf{0.9384 (94.9\%)} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Cross-Generator Zero-Shot Generalization}
+Table~\ref{tab:cross_gen} demonstrates SEFA's zero-shot generalization across unseen inpainting architectures without retraining.
+
+\begin{table}[t]
+\centering
+\caption{Zero-Shot Generalization Across Unseen Inpainting Generators.}
+\label{tab:cross_gen}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llccc}
+\toprule
+\textbf{Generator} & \textbf{Generative Family} & \textbf{AUROC} & \textbf{AP} & \textbf{mIoU} \\
+\midrule
+Stable Diffusion v1.5 & Latent Diffusion & 0.9884 & 0.9882 & 0.8415 \\
+Stable Diffusion XL & Latent Diffusion & 0.9712 & 0.9685 & 0.8190 \\
+LaMa Inpainting~\cite{suvorov2022resolution} & Fast Fourier GAN & 0.9560 & 0.9512 & 0.7940 \\
+DeepFillv2 & Gated Conv GAN & 0.9485 & 0.9420 & 0.7812 \\
+Blended Retouching & Hybrid Filtering & 0.9642 & 0.9610 & 0.8250 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\subsection{Component Ablation Studies}
+Table~\ref{tab:ablation} isolates the contribution of each evidence stress operator. Combining multi-band spectral, boundary phase, and noise stress yields a +10.60\% AUROC gain over the unstressed frozen baseline.
+
+\begin{table}[t]
+\centering
+\caption{Component Ablation on Evidence Stress Mechanisms.}
+\label{tab:ablation}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccr}
+\toprule
+\textbf{Configuration} & \textbf{AUROC} & \textbf{AP} & \textbf{F1} & \textbf{Gain} \\
+\midrule
+A: Clean $Z$ (No Stress) & 0.8824 & 0.8650 & 0.8490 & +0.00\% \\
+B: + Spectral Stress $\mathcal{S}_{\text{spec}}$ & 0.9412 & 0.9340 & 0.9080 & +5.88\% \\
+C: + Boundary Phase Stress $\mathcal{S}_{\text{phase}}$ & 0.9525 & 0.9460 & 0.9195 & +7.01\% \\
+D: + Noise Floor Stress $\mathcal{S}_{\text{noise}}$ & 0.9180 & 0.9025 & 0.8840 & +3.56\% \\
+\textbf{E: Full Composite Stress (SEFA)} & \textbf{0.9884} & \textbf{0.9882} & \textbf{0.9571} & \textbf{+10.60\%} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\section{Conclusion}
+We presented SEFA-Forensics, a zero-fine-tuning framework for subtle inpainting detection and localization. By probing frozen foundation representations with multi-band evidence stress and discovering intrinsic anchor channels via IFSS, SEFA achieves 0.9884 AUROC, 0.8415 mIoU, and 94.94\% retention under JPEG compression with only 11,626 trainable parameters ($0.0527\%$).
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
