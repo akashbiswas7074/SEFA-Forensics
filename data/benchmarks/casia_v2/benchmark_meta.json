@@ -1,0 +1,11 @@
+{
+  "benchmark_id": "casia_v2",
+  "benchmark_name": "CASIA v2.0",
+  "category": "Splicing & Copy-Move",
+  "evaluation_protocol": "Bilinear feathering + JPEG Q=75..90 post-processing",
+  "num_real": 30,
+  "num_forged": 30,
+  "num_masks": 30,
+  "resolution": "224x224",
+  "channels": 3
+}

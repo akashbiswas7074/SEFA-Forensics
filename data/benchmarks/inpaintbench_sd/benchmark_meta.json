@@ -1,0 +1,11 @@
+{
+  "benchmark_id": "inpaintbench_sd",
+  "benchmark_name": "InpaintBench (SD 1.5 / SDXL)",
+  "category": "Latent Diffusion AIGI",
+  "evaluation_protocol": "Latent diffusion high-frequency spectral dropout",
+  "num_real": 30,
+  "num_forged": 30,
+  "num_masks": 30,
+  "resolution": "224x224",
+  "channels": 3
+}

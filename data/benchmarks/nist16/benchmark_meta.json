@@ -1,0 +1,11 @@
+{
+  "benchmark_id": "nist16",
+  "benchmark_name": "NIST16 (MFC2016)",
+  "category": "Realistic Tampering",
+  "evaluation_protocol": "Nimble Challenge realistic composite tampering",
+  "num_real": 30,
+  "num_forged": 30,
+  "num_masks": 30,
+  "resolution": "224x224",
+  "channels": 3
+}

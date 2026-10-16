@@ -1,0 +1,11 @@
+{
+  "benchmark_id": "realistic_tampering",
+  "benchmark_name": "Realistic Tampering (Korus)",
+  "category": "Subtle Retouching / Splice",
+  "evaluation_protocol": "Subtle PRNU-preserving local retouching",
+  "num_real": 30,
+  "num_forged": 30,
+  "num_masks": 30,
+  "resolution": "224x224",
+  "channels": 3
+}

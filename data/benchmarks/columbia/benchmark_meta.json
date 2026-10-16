@@ -1,0 +1,11 @@
+{
+  "benchmark_id": "columbia",
+  "benchmark_name": "Columbia Photomontage",
+  "category": "Uncompressed Splicing",
+  "evaluation_protocol": "Raw uncompressed sensor boundary mismatch",
+  "num_real": 30,
+  "num_forged": 30,
+  "num_masks": 30,
+  "resolution": "224x224",
+  "channels": 3
+}

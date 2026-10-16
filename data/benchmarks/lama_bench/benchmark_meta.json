@@ -1,0 +1,11 @@
+{
+  "benchmark_id": "lama_bench",
+  "benchmark_name": "LaMa-Bench",
+  "category": "High-Res Fourier GAN",
+  "evaluation_protocol": "Fourier fast convolution periodic grid signatures",
+  "num_real": 30,
+  "num_forged": 30,
+  "num_masks": 30,
+  "resolution": "224x224",
+  "channels": 3
+}
