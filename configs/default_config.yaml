@@ -1,0 +1,38 @@
+# Self-Eliciting Forensic Anchors (SEFA) Default Configuration
+
+model:
+  backbone_name: "dinov2_vits14"  # Options: dinov2_vits14, dinov2_vitb14, vit_base_patch16_224, clip_vit_b16
+  pretrained: true
+  img_size: 224
+  target_layers: [3, 6, 9, 11]    # Intermediate transformer blocks for anchor extraction
+  num_anchors: 64                 # Top-K internal units to calibrate and route
+  router_hidden_dim: 64           # Tiny bottleneck dimension for routing (<0.2% total parameters)
+  dropout: 0.1
+
+evidence_stress:
+  perturbation_types: ["high_pass_residual", "phase_noise", "edge_gradient"]
+  stress_strength: 0.15           # Subtle perturbation factor epsilon
+  blend_weight: 0.5
+
+data:
+  data_dir: "data/raw"
+  processed_dir: "data/processed"
+  batch_size: 16
+  num_workers: 2
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+
+training:
+  epochs: 15
+  lr: 0.001
+  weight_decay: 0.0001
+  bce_weight: 1.0
+  dice_weight: 0.5
+  early_stopping_patience: 4
+  device: "cuda"                  # "cuda" if available, else "cpu"
+
+explainability:
+  heatmap_threshold: 0.45
+  top_active_anchors: 5
+  generate_nl_report: true

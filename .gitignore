@@ -1,0 +1,20 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Large checkpoint duplicates
+checkpoints/sefa_final.pth
+
+# Temporary and editor files
+temp_*
+*.swp
+*.bak
+.DS_Store
