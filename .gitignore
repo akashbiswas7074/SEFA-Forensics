@@ -18,3 +18,4 @@ temp_*
 *.swp
 *.bak
 .DS_Store
+downloads/
