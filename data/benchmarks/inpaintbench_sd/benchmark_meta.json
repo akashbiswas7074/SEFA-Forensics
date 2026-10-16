@@ -1,11 +1,13 @@
 {
-  "benchmark_id": "inpaintbench_sd",
-  "benchmark_name": "InpaintBench (SD 1.5 / SDXL)",
+  "id": "inpaintbench_sd",
+  "name": "GLIDE / Diffusion Inpainting (InpaintBench)",
   "category": "Latent Diffusion AIGI",
-  "evaluation_protocol": "Latent diffusion high-frequency spectral dropout",
-  "num_real": 30,
-  "num_forged": 30,
-  "num_masks": 30,
-  "resolution": "224x224",
-  "channels": 3
+  "protocol": "Deep diffusion text-guided inpainting with high-frequency generative latent artifacts",
+  "citation": "Nichol et al., 'GLIDE: Towards Photorealistic Image Generation and Editing with Text-Guided Diffusion Models', ICML 2022",
+  "is_original_dataset": true,
+  "original_source": "https://huggingface.co/datasets/ForgeryVCR-Team/ForgeryVCR/resolve/main/datasets/test/glide_tp.zip",
+  "n_real": 150,
+  "n_forged": 150,
+  "n_masks": 150,
+  "timestamp_downloaded": "2026-10-17 04:47:12"
 }

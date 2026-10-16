@@ -95,6 +95,7 @@ class ForensicDataset(Dataset):
         real_dir: Optional[str] = None,
         forged_dir: Optional[str] = None,
         masks_dir: Optional[str] = None,
+        data_roots: Optional[List[str]] = None,
         img_size: int = 224,
         synthetic_ratio: float = 0.0,
         apply_jpeg_compression: bool = False,
@@ -115,31 +116,55 @@ class ForensicDataset(Dataset):
         self.samples: List[Dict[str, Union[str, int, None]]] = []
         self.group_ids: List[str] = []
 
-        # Find real images
-        if real_dir and os.path.exists(real_dir):
-            real_files = glob.glob(os.path.join(real_dir, "*.*"))
-            real_files = [f for f in real_files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
-            for f in sorted(real_files):
-                grp = self._extract_group_id(f)
-                self.samples.append({"img_path": f, "mask_path": None, "label": 0, "group_id": grp})
-                self.group_ids.append(grp)
+        all_roots = []
+        if data_roots:
+            all_roots.extend(data_roots)
+        if real_dir or forged_dir:
+            all_roots.append({"real": real_dir, "forged": forged_dir, "masks": masks_dir})
 
-        # Find forged images & matching masks
-        if forged_dir and os.path.exists(forged_dir):
-            forged_files = glob.glob(os.path.join(forged_dir, "*.*"))
-            forged_files = [f for f in forged_files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
-            for f in sorted(forged_files):
-                base = os.path.splitext(os.path.basename(f))[0]
-                grp = self._extract_group_id(f)
-                mask_p = None
-                if masks_dir and os.path.exists(masks_dir):
-                    for c_name in [f"{grp}_mask.png", f"{base}.png", f"{grp}_forged.png"]:
-                        cand = os.path.join(masks_dir, c_name)
-                        if os.path.exists(cand):
-                            mask_p = cand
-                            break
-                self.samples.append({"img_path": f, "mask_path": mask_p, "label": 1, "group_id": grp})
-                self.group_ids.append(grp)
+        for item in all_roots:
+            if isinstance(item, str):
+                cur_real = os.path.join(item, "real")
+                cur_forged = os.path.join(item, "forged")
+                cur_masks = os.path.join(item, "masks")
+                prefix = os.path.basename(item)
+            else:
+                cur_real = item.get("real")
+                cur_forged = item.get("forged")
+                cur_masks = item.get("masks")
+                prefix = "custom"
+
+            # Index real images
+            if cur_real and os.path.exists(cur_real):
+                real_files = glob.glob(os.path.join(cur_real, "*.*"))
+                real_files = [f for f in real_files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.tif', '.bmp'))]
+                for f in sorted(real_files):
+                    grp = f"{prefix}_{self._extract_group_id(f)}"
+                    self.samples.append({"img_path": f, "mask_path": None, "label": 0, "group_id": grp})
+                    self.group_ids.append(grp)
+
+            # Index forged images & matching masks
+            if cur_forged and os.path.exists(cur_forged):
+                forged_files = glob.glob(os.path.join(cur_forged, "*.*"))
+                forged_files = [f for f in forged_files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.tif', '.bmp'))]
+                for f in sorted(forged_files):
+                    base = os.path.splitext(os.path.basename(f))[0]
+                    raw_grp = self._extract_group_id(f)
+                    grp = f"{prefix}_{raw_grp}"
+                    mask_p = None
+                    if cur_masks and os.path.exists(cur_masks):
+                        cand_names = [
+                            f"{base}.png", f"{base}_mask.png", f"{base}_gt.png",
+                            f"{raw_grp}_mask.png", f"{raw_grp}.png", f"{raw_grp}_gt.png",
+                            f"{raw_grp}_forged.png"
+                        ]
+                        for c_name in cand_names:
+                            cand = os.path.join(cur_masks, c_name)
+                            if os.path.exists(cand):
+                                mask_p = cand
+                                break
+                    self.samples.append({"img_path": f, "mask_path": mask_p, "label": 1, "group_id": grp})
+                    self.group_ids.append(grp)
 
         self.transform = transform or T.Compose([
             T.Resize((img_size, img_size)),

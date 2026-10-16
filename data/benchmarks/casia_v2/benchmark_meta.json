@@ -1,11 +1,13 @@
 {
-  "benchmark_id": "casia_v2",
-  "benchmark_name": "CASIA v2.0",
+  "id": "casia_v2",
+  "name": "CASIA Image Tampering Suite",
   "category": "Splicing & Copy-Move",
-  "evaluation_protocol": "Bilinear feathering + JPEG Q=75..90 post-processing",
-  "num_real": 30,
-  "num_forged": 30,
-  "num_masks": 30,
-  "resolution": "224x224",
-  "channels": 3
+  "protocol": "Multi-category splicing & copy-move with realistic feathered boundaries and JPEG compression",
+  "citation": "Dong et al., 'CASIA Image Tampering Detection Evaluation Database', IEEE ChinaSIP 2013; Pham et al., 2019",
+  "is_original_dataset": true,
+  "original_source": "https://huggingface.co/datasets/ForgeryVCR-Team/ForgeryVCR/resolve/main/datasets/test/casia1_tp.zip",
+  "n_real": 150,
+  "n_forged": 150,
+  "n_masks": 150,
+  "timestamp_downloaded": "2026-10-17 04:51:24"
 }
