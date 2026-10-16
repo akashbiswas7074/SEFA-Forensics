@@ -80,3 +80,104 @@ def compute_localization_iou(
         "localization_iou": mean_iou,
         "localization_dice": mean_dice,
     }
+
+
+def compute_pixel_f1(
+    pred_masks: np.ndarray,
+    gt_masks: np.ndarray,
+    threshold: float = 0.5,
+    smooth: float = 1e-6,
+) -> Dict[str, float]:
+    """
+    Computes global pixel-level precision, recall, and F1-score across all mask pixels.
+    pred_masks: [N, H, W] in [0, 1]
+    gt_masks: [N, H, W] binary in {0, 1}
+    """
+    bin_preds = (pred_masks >= threshold).astype(bool).ravel()
+    bin_gts = (gt_masks > 0.5).astype(bool).ravel()
+
+    tp = np.logical_and(bin_preds, bin_gts).sum()
+    fp = np.logical_and(bin_preds, ~bin_gts).sum()
+    fn = np.logical_and(~bin_preds, bin_gts).sum()
+
+    precision = float((tp + smooth) / (tp + fp + smooth))
+    recall = float((tp + smooth) / (tp + fn + smooth))
+    pixel_f1 = float((2.0 * tp + smooth) / (2.0 * tp + fp + fn + smooth))
+
+    return {
+        "pixel_precision": precision,
+        "pixel_recall": recall,
+        "pixel_f1": pixel_f1,
+    }
+
+
+def compute_boundary_f1(
+    pred_masks: np.ndarray,
+    gt_masks: np.ndarray,
+    threshold: float = 0.5,
+    dilation_radius: int = 3,
+    smooth: float = 1e-6,
+) -> Dict[str, float]:
+    """
+    Computes Boundary-F1 score with a boundary tolerance buffer epsilon (dilation radius).
+    Standard protocol in CVPR/ICCV forensics benchmarks (TruFor, CAT-Net).
+    pred_masks: [N, H, W] in [0, 1]
+    gt_masks: [N, H, W] in {0, 1}
+    """
+    from scipy.ndimage import binary_dilation, binary_erosion
+
+    bin_preds = (pred_masks >= threshold).astype(bool)
+    bin_gts = (gt_masks > 0.5).astype(bool)
+
+    struct = np.ones((3, 3), dtype=bool)
+
+    f1_scores = []
+    precisions = []
+    recalls = []
+
+    for i in range(len(bin_gts)):
+        gt_i = bin_gts[i]
+        pred_i = bin_preds[i]
+
+        # Skip sample if no forgery exists in ground truth
+        if not np.any(gt_i):
+            continue
+
+        # Extract 1-pixel boundary
+        gt_bound = np.logical_xor(gt_i, binary_erosion(gt_i, structure=struct))
+        pred_bound = np.logical_xor(pred_i, binary_erosion(pred_i, structure=struct))
+
+        if not np.any(gt_bound) and not np.any(pred_bound):
+            f1_scores.append(1.0)
+            continue
+        if not np.any(gt_bound) or not np.any(pred_bound):
+            f1_scores.append(0.0)
+            continue
+
+        # Dilate for tolerance
+        gt_dil = binary_dilation(gt_bound, structure=struct, iterations=dilation_radius)
+        pred_dil = binary_dilation(pred_bound, structure=struct, iterations=dilation_radius)
+
+        # Precision: pred boundary pixels matching within dilated GT boundary
+        tp_prec = np.logical_and(pred_bound, gt_dil).sum()
+        p = (tp_prec + smooth) / (pred_bound.sum() + smooth)
+
+        # Recall: GT boundary pixels matching within dilated pred boundary
+        tp_rec = np.logical_and(gt_bound, pred_dil).sum()
+        r = (tp_rec + smooth) / (gt_bound.sum() + smooth)
+
+        f1 = (2.0 * p * r + smooth) / (p + r + smooth)
+
+        precisions.append(p)
+        recalls.append(r)
+        f1_scores.append(f1)
+
+    mean_f1 = float(np.mean(f1_scores)) if len(f1_scores) > 0 else 0.0
+    mean_prec = float(np.mean(precisions)) if len(precisions) > 0 else 0.0
+    mean_rec = float(np.mean(recalls)) if len(recalls) > 0 else 0.0
+
+    return {
+        "boundary_f1": mean_f1,
+        "boundary_precision": mean_prec,
+        "boundary_recall": mean_rec,
+    }

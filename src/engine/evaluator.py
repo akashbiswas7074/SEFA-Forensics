@@ -11,7 +11,12 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..models.sefa_model import SEFAModel
-from ..utils.metrics import compute_classification_metrics, compute_localization_iou
+from ..utils.metrics import (
+    compute_classification_metrics,
+    compute_localization_iou,
+    compute_pixel_f1,
+    compute_boundary_f1,
+)
 
 
 class SEFAEvaluator:
@@ -62,8 +67,10 @@ class SEFAEvaluator:
 
         cls_metrics = compute_classification_metrics(all_y_true, all_y_scores, threshold=threshold)
         loc_metrics = compute_localization_iou(all_pred_masks_np, all_gt_masks_np, threshold=threshold)
+        pix_metrics = compute_pixel_f1(all_pred_masks_np, all_gt_masks_np, threshold=threshold)
+        bnd_metrics = compute_boundary_f1(all_pred_masks_np, all_gt_masks_np, threshold=threshold)
 
-        results = {**cls_metrics, **loc_metrics}
+        results = {**cls_metrics, **loc_metrics, **pix_metrics, **bnd_metrics}
 
         if verbose:
             print("[+] Benchmark Evaluation Results:")
@@ -72,5 +79,7 @@ class SEFAEvaluator:
             print(f"    Image-Level F1    : {results['f1']:.4f}")
             print(f"    Localization mIoU : {results['localization_iou']:.4f}")
             print(f"    Localization Dice : {results['localization_dice']:.4f}")
+            print(f"    Pixel-Level F1    : {results['pixel_f1']:.4f}")
+            print(f"    Boundary-Level F1 : {results['boundary_f1']:.4f}")
 
         return results

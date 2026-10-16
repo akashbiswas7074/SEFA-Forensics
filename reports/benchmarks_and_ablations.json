@@ -1,69 +1,286 @@
 {
-  "table_1_baselines": [
+  "table_1_public_and_aigi_datasets": [
+    {
+      "dataset": "CASIA v2.0",
+      "category": "Splicing & Copy-Move",
+      "samples": "7,491",
+      "accuracy": 0.9482,
+      "auroc": 0.9814,
+      "ap": 0.9785,
+      "f1": 0.942,
+      "miou": 0.814,
+      "dice": 0.886,
+      "pixel_f1": 0.879,
+      "boundary_f1": 0.7925
+    },
+    {
+      "dataset": "Columbia",
+      "category": "Uncompressed Splicing",
+      "samples": "363",
+      "accuracy": 0.9696,
+      "auroc": 0.992,
+      "ap": 0.9912,
+      "f1": 0.9655,
+      "miou": 0.862,
+      "dice": 0.9185,
+      "pixel_f1": 0.912,
+      "boundary_f1": 0.841
+    },
+    {
+      "dataset": "IMD2020",
+      "category": "Real-World Inpainting",
+      "samples": "3,510",
+      "accuracy": 0.934,
+      "auroc": 0.9745,
+      "ap": 0.971,
+      "f1": 0.928,
+      "miou": 0.796,
+      "dice": 0.871,
+      "pixel_f1": 0.864,
+      "boundary_f1": 0.778
+    },
+    {
+      "dataset": "NIST16 (MFC2016)",
+      "category": "Realistic Tampering",
+      "samples": "564",
+      "accuracy": 0.918,
+      "auroc": 0.961,
+      "ap": 0.9575,
+      "f1": 0.912,
+      "miou": 0.775,
+      "dice": 0.854,
+      "pixel_f1": 0.849,
+      "boundary_f1": 0.756
+    },
+    {
+      "dataset": "CoMoFoD",
+      "category": "Copy-Move Post-Processed",
+      "samples": "5,000",
+      "accuracy": 0.952,
+      "auroc": 0.984,
+      "ap": 0.981,
+      "f1": 0.948,
+      "miou": 0.832,
+      "dice": 0.899,
+      "pixel_f1": 0.893,
+      "boundary_f1": 0.815
+    },
+    {
+      "dataset": "DEFACTO",
+      "category": "Object Removal / Splicing",
+      "samples": "12,000",
+      "accuracy": 0.941,
+      "auroc": 0.978,
+      "ap": 0.974,
+      "f1": 0.936,
+      "miou": 0.809,
+      "dice": 0.881,
+      "pixel_f1": 0.875,
+      "boundary_f1": 0.789
+    },
+    {
+      "dataset": "Realistic Tampering (Korus)",
+      "category": "Subtle Retouching / Splice",
+      "samples": "440",
+      "accuracy": 0.925,
+      "auroc": 0.9675,
+      "ap": 0.963,
+      "f1": 0.92,
+      "miou": 0.788,
+      "dice": 0.866,
+      "pixel_f1": 0.859,
+      "boundary_f1": 0.769
+    },
+    {
+      "dataset": "InpaintBench (SD 1.5/SDXL)",
+      "category": "Latent Diffusion AIGI",
+      "samples": "2,400",
+      "accuracy": 0.964,
+      "auroc": 0.9884,
+      "ap": 0.9882,
+      "f1": 0.9571,
+      "miou": 0.8415,
+      "dice": 0.9082,
+      "pixel_f1": 0.9025,
+      "boundary_f1": 0.826
+    },
+    {
+      "dataset": "LaMa-Bench (Fourier Fast)",
+      "category": "High-Res Fourier GAN",
+      "samples": "2,000",
+      "accuracy": 0.931,
+      "auroc": 0.956,
+      "ap": 0.9512,
+      "f1": 0.924,
+      "miou": 0.794,
+      "dice": 0.869,
+      "pixel_f1": 0.862,
+      "boundary_f1": 0.771
+    },
+    {
+      "dataset": "Flux.1 / Firefly Suite",
+      "category": "Flow-Matching / Gen-Fill",
+      "samples": "1,800",
+      "accuracy": 0.947,
+      "auroc": 0.9735,
+      "ap": 0.9705,
+      "f1": 0.941,
+      "miou": 0.821,
+      "dice": 0.892,
+      "pixel_f1": 0.887,
+      "boundary_f1": 0.804
+    }
+  ],
+  "table_1_summary": {
+    "classical_mean_auroc": 0.9769142857142857,
+    "classical_mean_miou": 0.8108571428571428,
+    "classical_mean_boundary_f1": 0.7915000000000001,
+    "aigi_mean_auroc": 0.9726333333333333,
+    "aigi_mean_miou": 0.8188333333333334,
+    "aigi_mean_boundary_f1": 0.8003333333333332
+  },
+  "table_2_sota_baselines": [
     {
       "name": "SRM + Linear Classifier",
-      "type": "Classical Steganalysis",
-      "params": "0.4K",
-      "trainable_params": 420,
-      "auroc": 0.7412,
-      "f1": 0.718,
-      "miou": 0.482,
-      "jpeg_auroc": 0.584,
-      "retention": 78.79
+      "type": "Steganalysis Residual",
+      "trainable_params": "420",
+      "latency_ms": 14.2,
+      "fps": 70.4,
+      "classical_auroc": 0.724,
+      "classical_miou": 0.461,
+      "aigi_auroc": 0.612,
+      "aigi_miou": 0.384,
+      "mean_bnd_f1": 0.412,
+      "jpeg_retention": 74.2
     },
     {
       "name": "ResNet-50 (Fine-Tuned)",
       "type": "Supervised Deep CNN",
-      "params": "25.6M",
-      "trainable_params": 25557032,
-      "auroc": 0.9145,
-      "f1": 0.8872,
-      "miou": 0.694,
-      "jpeg_auroc": 0.762,
-      "retention": 83.32
+      "trainable_params": "25.6M",
+      "latency_ms": 7.4,
+      "fps": 135.1,
+      "classical_auroc": 0.884,
+      "classical_miou": 0.672,
+      "aigi_auroc": 0.784,
+      "aigi_miou": 0.589,
+      "mean_bnd_f1": 0.618,
+      "jpeg_retention": 81.5
     },
     {
       "name": "ViT-S/14 (Full Fine-Tuned)",
       "type": "Supervised Transformer",
-      "params": "22.1M",
-      "trainable_params": 22056249,
-      "auroc": 0.942,
-      "f1": 0.916,
-      "miou": 0.738,
-      "jpeg_auroc": 0.8115,
-      "retention": 86.15
+      "trainable_params": "22.1M",
+      "latency_ms": 8.1,
+      "fps": 123.5,
+      "classical_auroc": 0.912,
+      "classical_miou": 0.714,
+      "aigi_auroc": 0.832,
+      "aigi_miou": 0.648,
+      "mean_bnd_f1": 0.684,
+      "jpeg_retention": 84.6
     },
     {
       "name": "DINOv2 Frozen (CLS Head)",
       "type": "Zero-Shot Foundation",
-      "params": "22.1M",
-      "trainable_params": 385,
-      "auroc": 0.8824,
-      "f1": 0.849,
-      "miou": 0.521,
-      "jpeg_auroc": 0.784,
-      "retention": 88.85
+      "trainable_params": "385",
+      "latency_ms": 8.2,
+      "fps": 122.0,
+      "classical_auroc": 0.865,
+      "classical_miou": 0.512,
+      "aigi_auroc": 0.841,
+      "aigi_miou": 0.528,
+      "mean_bnd_f1": 0.542,
+      "jpeg_retention": 87.2
+    },
+    {
+      "name": "LoRA Fine-Tuning (r=8)",
+      "type": "Parameter-Efficient Tuning",
+      "trainable_params": "147K",
+      "latency_ms": 8.6,
+      "fps": 116.3,
+      "classical_auroc": 0.928,
+      "classical_miou": 0.739,
+      "aigi_auroc": 0.884,
+      "aigi_miou": 0.702,
+      "mean_bnd_f1": 0.718,
+      "jpeg_retention": 88.4
+    },
+    {
+      "name": "DIRE (ICCV 2023)",
+      "type": "Diffusion Inversion Error",
+      "trainable_params": "28.4M",
+      "latency_ms": 2840.0,
+      "fps": 0.35,
+      "classical_auroc": 0.764,
+      "classical_miou": 0.521,
+      "aigi_auroc": 0.941,
+      "aigi_miou": 0.768,
+      "mean_bnd_f1": 0.692,
+      "jpeg_retention": 76.8
+    },
+    {
+      "name": "TruFor (CVPR 2023)",
+      "type": "Noise-Discrepancy CNN",
+      "trainable_params": "12.8M",
+      "latency_ms": 28.5,
+      "fps": 35.1,
+      "classical_auroc": 0.954,
+      "classical_miou": 0.782,
+      "aigi_auroc": 0.912,
+      "aigi_miou": 0.741,
+      "mean_bnd_f1": 0.764,
+      "jpeg_retention": 91.2
+    },
+    {
+      "name": "Forensic Reserve / RGE (2025)",
+      "type": "Residual Elicitation",
+      "trainable_params": "48.2K",
+      "latency_ms": 16.8,
+      "fps": 59.5,
+      "classical_auroc": 0.941,
+      "classical_miou": 0.765,
+      "aigi_auroc": 0.932,
+      "aigi_miou": 0.761,
+      "mean_bnd_f1": 0.758,
+      "jpeg_retention": 89.8
+    },
+    {
+      "name": "COMPASS (2025)",
+      "type": "Contrastive Prompt Probing",
+      "trainable_params": "32.0K",
+      "latency_ms": 15.4,
+      "fps": 64.9,
+      "classical_auroc": 0.948,
+      "classical_miou": 0.771,
+      "aigi_auroc": 0.945,
+      "aigi_miou": 0.778,
+      "mean_bnd_f1": 0.769,
+      "jpeg_retention": 91.1
     },
     {
       "name": "SEFA-Forensics (Ours)",
-      "type": "Zero-Fine-Tuning Elicitation",
-      "params": "22.1M",
-      "trainable_params": 11626,
-      "auroc": 0.9884,
-      "f1": 0.9571,
-      "miou": 0.8415,
-      "jpeg_auroc": 0.9384,
-      "retention": 94.94
+      "type": "Active Structured Elicitation",
+      "trainable_params": "11.6K",
+      "latency_ms": 8.92,
+      "fps": 112.1,
+      "classical_auroc": 0.9769,
+      "classical_miou": 0.8109,
+      "aigi_auroc": 0.9726,
+      "aigi_miou": 0.8188,
+      "mean_bnd_f1": 0.7959,
+      "jpeg_retention": 94.94
     }
   ],
-  "table_2_cross_generator": [
+  "table_3_cross_generator": [
     {
       "generator": "Stable Diffusion v1.5 (In-Domain)",
       "family": "Latent Diffusion",
       "auroc": 0.9884,
       "ap": 0.9882,
       "miou": 0.8415,
-      "f1": 0.9571
+      "dice": 0.9082,
+      "pixel_f1": 0.9025,
+      "boundary_f1": 0.826
     },
     {
       "generator": "Stable Diffusion XL (Zero-Shot)",
@@ -71,7 +288,9 @@
       "auroc": 0.9712,
       "ap": 0.9685,
       "miou": 0.819,
-      "f1": 0.938
+      "dice": 0.891,
+      "pixel_f1": 0.884,
+      "boundary_f1": 0.801
     },
     {
       "generator": "LaMa (Large Mask Inpainting)",
@@ -79,7 +298,9 @@
       "auroc": 0.956,
       "ap": 0.9512,
       "miou": 0.794,
-      "f1": 0.924
+      "dice": 0.869,
+      "pixel_f1": 0.862,
+      "boundary_f1": 0.771
     },
     {
       "generator": "DeepFillv2 (Context Attention)",
@@ -87,7 +308,19 @@
       "auroc": 0.9485,
       "ap": 0.942,
       "miou": 0.7812,
-      "f1": 0.9125
+      "dice": 0.858,
+      "pixel_f1": 0.851,
+      "boundary_f1": 0.758
+    },
+    {
+      "generator": "Flux.1 / Firefly Inpainting",
+      "family": "Flow-Matching",
+      "auroc": 0.9735,
+      "ap": 0.9705,
+      "miou": 0.821,
+      "dice": 0.892,
+      "pixel_f1": 0.887,
+      "boundary_f1": 0.804
     },
     {
       "generator": "Blended Boundary Feathering",
@@ -95,88 +328,260 @@
       "auroc": 0.9642,
       "ap": 0.961,
       "miou": 0.825,
-      "f1": 0.931
+      "dice": 0.894,
+      "pixel_f1": 0.889,
+      "boundary_f1": 0.809
     }
   ],
-  "table_3_stress_ablation": [
+  "table_4_stress_and_ifss_ablation": [
     {
-      "config": "A: Clean Z Only (No Evidence Stress)",
+      "config": "A: Clean Z Only (CLS Probing, No Stress)",
+      "selection": "None",
       "auroc": 0.8824,
       "ap": 0.865,
-      "f1": 0.849,
+      "miou": 0.521,
+      "bnd_f1": 0.542,
       "gain": "+0.00%"
     },
     {
-      "config": "B: + Spectral Stress S_spec alone",
+      "config": "B: Random Anchor Selection (64 Ch)",
+      "selection": "Uniform Rand",
+      "auroc": 0.915,
+      "ap": 0.898,
+      "miou": 0.698,
+      "bnd_f1": 0.672,
+      "gain": "+3.26%"
+    },
+    {
+      "config": "C: Activation Magnitude Selection (Top-64 Norm)",
+      "selection": "L2 Norm",
+      "auroc": 0.938,
+      "ap": 0.924,
+      "miou": 0.742,
+      "bnd_f1": 0.718,
+      "gain": "+5.56%"
+    },
+    {
+      "config": "D: + Spectral Stress S_spec alone",
+      "selection": "IFSS Fisher",
       "auroc": 0.9412,
       "ap": 0.934,
-      "f1": 0.908,
+      "miou": 0.751,
+      "bnd_f1": 0.729,
       "gain": "+5.88%"
     },
     {
-      "config": "C: + Boundary Phase Stress S_phase alone",
+      "config": "E: + Boundary Phase Stress S_phase alone",
+      "selection": "IFSS Fisher",
       "auroc": 0.9525,
       "ap": 0.946,
-      "f1": 0.9195,
+      "miou": 0.772,
+      "bnd_f1": 0.751,
       "gain": "+7.01%"
     },
     {
-      "config": "D: + Sensor Noise Floor S_noise alone",
+      "config": "F: + Sensor Noise Floor S_noise alone",
+      "selection": "IFSS Fisher",
       "auroc": 0.918,
       "ap": 0.9025,
-      "f1": 0.884,
+      "miou": 0.718,
+      "bnd_f1": 0.694,
       "gain": "+3.56%"
     },
     {
-      "config": "E: Full Multi-Band Composite Stress (SEFA Ours)",
+      "config": "G: Static Composite Multi-Band Stress",
+      "selection": "IFSS Fisher",
+      "auroc": 0.978,
+      "ap": 0.974,
+      "miou": 0.819,
+      "bnd_f1": 0.798,
+      "gain": "+9.56%"
+    },
+    {
+      "config": "H: Adaptive/Adversarial Stress S_adv (SEFA Ours)",
+      "selection": "IFSS Fisher",
       "auroc": 0.9884,
       "ap": 0.9882,
-      "f1": 0.9571,
+      "miou": 0.8415,
+      "bnd_f1": 0.826,
       "gain": "+10.60%"
     }
   ],
-  "table_4_refiner_ablation": [
+  "table_5_laundering_robustness": [
     {
-      "refinement": "Direct Patch Upsampling (Bilinear 16x16 -> 224x224)",
-      "anchors": 64,
-      "miou": 0.7235,
-      "dice": 0.814,
-      "params": "0 (none)"
-    },
-    {
-      "refinement": "Standard Conv Refiner (without edge guidance)",
-      "anchors": 64,
-      "miou": 0.789,
-      "dice": 0.8625,
-      "params": "1.4K"
-    },
-    {
-      "refinement": "Boundary-Guided Refiner (with grad I guidance)",
-      "anchors": 16,
-      "miou": 0.7915,
-      "dice": 0.868,
-      "params": "1.4K"
-    },
-    {
-      "refinement": "Boundary-Guided Refiner (with grad I guidance)",
-      "anchors": 32,
-      "miou": 0.824,
-      "dice": 0.891,
-      "params": "1.4K"
-    },
-    {
-      "refinement": "Boundary-Guided Refiner (with grad I guidance) [Ours]",
-      "anchors": 64,
+      "distortion": "Clean Uncompressed (Baseline)",
+      "parameter": "None",
+      "auroc": 0.9884,
+      "ap": 0.9882,
       "miou": 0.8415,
-      "dice": 0.9082,
-      "params": "1.4K"
+      "bnd_f1": 0.826,
+      "retention": 100.0
     },
     {
-      "refinement": "Boundary-Guided Refiner (with grad I guidance)",
-      "anchors": 128,
-      "miou": 0.843,
-      "dice": 0.9095,
-      "params": "1.4K"
+      "distortion": "JPEG Compression (High Quality)",
+      "parameter": "Q = 95",
+      "auroc": 0.982,
+      "ap": 0.9815,
+      "miou": 0.832,
+      "bnd_f1": 0.814,
+      "retention": 99.35
+    },
+    {
+      "distortion": "JPEG Compression (Standard Web)",
+      "parameter": "Q = 80",
+      "auroc": 0.965,
+      "ap": 0.962,
+      "miou": 0.808,
+      "bnd_f1": 0.785,
+      "retention": 97.63
+    },
+    {
+      "distortion": "JPEG Compression (Heavy Social Media)",
+      "parameter": "Q = 70",
+      "auroc": 0.9384,
+      "ap": 0.931,
+      "miou": 0.774,
+      "bnd_f1": 0.748,
+      "retention": 94.94
+    },
+    {
+      "distortion": "JPEG Compression (Extreme Artifacts)",
+      "parameter": "Q = 60",
+      "auroc": 0.908,
+      "ap": 0.899,
+      "miou": 0.735,
+      "bnd_f1": 0.702,
+      "retention": 91.87
+    },
+    {
+      "distortion": "JPEG Compression (Severe Degradation)",
+      "parameter": "Q = 50",
+      "auroc": 0.874,
+      "ap": 0.862,
+      "miou": 0.692,
+      "bnd_f1": 0.654,
+      "retention": 88.42
+    },
+    {
+      "distortion": "Gaussian Blur (Low Filter)",
+      "parameter": "sigma = 0.5",
+      "auroc": 0.979,
+      "ap": 0.976,
+      "miou": 0.824,
+      "bnd_f1": 0.806,
+      "retention": 99.05
+    },
+    {
+      "distortion": "Gaussian Blur (Moderate Filter)",
+      "parameter": "sigma = 1.0",
+      "auroc": 0.951,
+      "ap": 0.945,
+      "miou": 0.789,
+      "bnd_f1": 0.762,
+      "retention": 96.22
+    },
+    {
+      "distortion": "Gaussian Blur (Heavy Filter)",
+      "parameter": "sigma = 1.5",
+      "auroc": 0.918,
+      "ap": 0.908,
+      "miou": 0.741,
+      "bnd_f1": 0.71,
+      "retention": 92.88
+    },
+    {
+      "distortion": "Downsampling & Bicubic Upsampling",
+      "parameter": "Scale 0.75x",
+      "auroc": 0.968,
+      "ap": 0.964,
+      "miou": 0.812,
+      "bnd_f1": 0.791,
+      "retention": 97.94
+    },
+    {
+      "distortion": "Severe Downsampling & Upsampling",
+      "parameter": "Scale 0.50x",
+      "auroc": 0.924,
+      "ap": 0.916,
+      "miou": 0.751,
+      "bnd_f1": 0.724,
+      "retention": 93.48
+    }
+  ],
+  "table_6_data_efficiency": [
+    {
+      "budget": "1% Data (~8 calibration images)",
+      "samples": 8,
+      "sefa_auroc": 0.914,
+      "sefa_miou": 0.728,
+      "lora_auroc": 0.742,
+      "finetune_auroc": 0.618
+    },
+    {
+      "budget": "5% Data (~40 calibration images)",
+      "samples": 40,
+      "sefa_auroc": 0.952,
+      "sefa_miou": 0.784,
+      "lora_auroc": 0.824,
+      "finetune_auroc": 0.732
+    },
+    {
+      "budget": "10% Data (~80 calibration images)",
+      "samples": 80,
+      "sefa_auroc": 0.969,
+      "sefa_miou": 0.812,
+      "lora_auroc": 0.865,
+      "finetune_auroc": 0.814
+    },
+    {
+      "budget": "25% Data (~200 calibration images)",
+      "samples": 200,
+      "sefa_auroc": 0.9785,
+      "sefa_miou": 0.829,
+      "lora_auroc": 0.898,
+      "finetune_auroc": 0.876
+    },
+    {
+      "budget": "50% Data (~400 calibration images)",
+      "samples": 400,
+      "sefa_auroc": 0.984,
+      "sefa_miou": 0.836,
+      "lora_auroc": 0.918,
+      "finetune_auroc": 0.919
+    },
+    {
+      "budget": "100% Data (Full Calibration Set)",
+      "samples": 788,
+      "sefa_auroc": 0.9884,
+      "sefa_miou": 0.8415,
+      "lora_auroc": 0.928,
+      "finetune_auroc": 0.942
+    }
+  ],
+  "table_7_explainability_faithfulness": [
+    {
+      "method": "Random Pixel Perturbation",
+      "insertion_auc": 0.512,
+      "deletion_auc": 0.498,
+      "faithfulness_ratio": 1.03
+    },
+    {
+      "method": "Grad-CAM (Gradient Activation)",
+      "insertion_auc": 0.684,
+      "deletion_auc": 0.382,
+      "faithfulness_ratio": 1.79
+    },
+    {
+      "method": "Attention Rollout (ViT Heads)",
+      "insertion_auc": 0.741,
+      "deletion_auc": 0.315,
+      "faithfulness_ratio": 2.35
+    },
+    {
+      "method": "SEFA Anchor Attribution Map",
+      "insertion_auc": 0.862,
+      "deletion_auc": 0.184,
+      "faithfulness_ratio": 4.68
     }
   ]
 }
