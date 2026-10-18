@@ -160,7 +160,7 @@ class FrozenFoundationBackbone(nn.Module):
         """
         self.layer_features.clear()
         with torch.no_grad():
-            _ = self.backbone(x)
+            self.last_cls_token = self.backbone(x)
 
         H, W = x.shape[-2:]
         H_p = H // self.patch_size

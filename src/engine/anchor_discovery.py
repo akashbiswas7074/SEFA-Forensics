@@ -69,16 +69,18 @@ class AnchorDiscoveryEngine:
                     res = self.model.evidence_stress.compute_latent_residual(
                         clean_feats[l_idx], stressed_feats[l_idx]
                     )
-                    # Average over spatial patches: [B, D]
-                    res_mean = res.mean(dim=1)
+                    # Isolated localized forgery response: top 12% peak patches + spatial variance
+                    k_p = max(1, int(0.12 * res.shape[1]))
+                    top_res = torch.topk(res, k=k_p, dim=1)[0].mean(dim=1)
+                    res_sig = 0.7 * top_res + 0.3 * res.std(dim=1)
 
                     real_mask = (labels == 0)
                     forged_mask = (labels == 1)
 
                     if real_mask.any():
-                        real_residuals[l_idx].append(res_mean[real_mask].cpu())
+                        real_residuals[l_idx].append(res_sig[real_mask].cpu())
                     if forged_mask.any():
-                        forged_residuals[l_idx].append(res_mean[forged_mask].cpu())
+                        forged_residuals[l_idx].append(res_sig[forged_mask].cpu())
 
         calibrated_indices_list = []
         calibrated_weights_list = []

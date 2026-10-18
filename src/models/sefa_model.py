@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 from .backbone import FrozenFoundationBackbone
 from .evidence_stress import EvidenceStressModule
-from .anchors import ForensicAnchorBank, AnchorRouter, BoundaryGuidedRefiner
+from .anchors import ForensicAnchorBank, AnchorRouter, BoundaryGuidedRefiner, ProgressiveLocalizationDecoder
 
 
 class SEFAModel(nn.Module):
@@ -20,8 +20,8 @@ class SEFAModel(nn.Module):
     - 100% frozen foundation model (DINOv2 / ViT)
     - Multi-band evidence stress mechanism
     - Calibrated sparse intrinsic anchors
-    - Multi-quantile router (<0.2% trainable parameters)
-    - Boundary-guided spatial refinement head for sharp pixel-level localization
+    - Multi-quantile router (<0.15% trainable parameters)
+    - Progressive localization decoder for boundary-aligned pixel-level localization
     """
     def __init__(
         self,
@@ -58,15 +58,20 @@ class SEFAModel(nn.Module):
             feature_dim=self.backbone.feature_dim,
         )
 
-        # 4. Multi-Quantile Router (<0.2% parameters)
+        # 4. Multi-Quantile Router (<0.15% parameters)
         self.router = AnchorRouter(
             total_anchors=num_anchors,
             hidden_dim=router_hidden_dim,
+            cls_dim=self.backbone.feature_dim,
             dropout=dropout,
         )
 
-        # 5. Boundary-Guided Spatial Refiner (<1.5k parameters)
-        self.boundary_refiner = BoundaryGuidedRefiner(in_channels=1, hidden_dim=16)
+        # 5. Progressive Localization Decoder (<10k parameters)
+        self.progressive_decoder = ProgressiveLocalizationDecoder(
+            in_channels=router_hidden_dim // 2,
+            hidden_dim=16,
+        )
+        self.boundary_refiner = self.progressive_decoder
 
     def count_parameters(self) -> Dict[str, Union[int, float]]:
         """
@@ -104,6 +109,7 @@ class SEFAModel(nn.Module):
         # Step 1: Extract clean features from frozen backbone
         with torch.no_grad():
             clean_feats, spatial_hw = self.backbone.extract_patch_features(x)
+            cls_token = getattr(self.backbone, "last_cls_token", None)
 
             # Step 2: Apply multi-band evidence stress to probe latent generative brittleness
             stressed_x = self.evidence_stress(x)
@@ -120,26 +126,26 @@ class SEFAModel(nn.Module):
         # Step 4: Extract calibrated intrinsic forensic anchors
         anchor_acts, anchor_res = self.anchor_bank.extract_anchors(clean_feats, residuals)
 
-        # Step 5: Route through multi-quantile router
-        img_logits, patch_mask, routed_embeds = self.router(
+        # Step 5: Route through multi-quantile router with CLS semantic anchor
+        img_logits, patch_logits, feat_grid = self.router(
             anchor_acts=anchor_acts,
             anchor_residuals=anchor_res,
             spatial_hw=spatial_hw,
+            cls_token=cls_token,
         )
 
-        # Step 6: Upsample and apply Boundary-Guided Refinement
-        coarse_dense_mask = F.interpolate(patch_mask, size=(H, W), mode="bilinear", align_corners=False)
-        refined_mask = self.boundary_refiner(coarse_dense_mask, x)
+        # Step 6: Progressive decoding with boundary guidance for sharp 224x224 localization
+        refined_mask, mask_logits = self.progressive_decoder(feat_grid, x)
 
         details = None
         if return_details:
             details = {
                 "anchor_acts": anchor_acts,
                 "anchor_residuals": anchor_res,
-                "patch_mask_lowres": patch_mask,
-                "coarse_dense_mask": coarse_dense_mask,
+                "patch_logits": patch_logits,
+                "mask_logits": mask_logits,
                 "spatial_hw": spatial_hw,
-                "routed_embeds": routed_embeds,
+                "routed_embeds": feat_grid,
             }
 
         return img_logits, refined_mask, details
