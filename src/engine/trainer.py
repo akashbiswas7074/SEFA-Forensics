@@ -61,6 +61,47 @@ class FocalTverskyLoss(nn.Module):
         return focal_tversky.mean()
 
 
+def lovasz_grad(gt_sorted: torch.Tensor) -> torch.Tensor:
+    p = len(gt_sorted)
+    gts = gt_sorted.sum()
+    intersection = gts - gt_sorted.float().cumsum(0)
+    union = gts + (1.0 - gt_sorted).float().cumsum(0)
+    jaccard = 1.0 - intersection / (union + 1e-6)
+    if p > 1:
+        jaccard[1:p] = jaccard[1:p] - jaccard[0:-1]
+    return jaccard
+
+
+def lovasz_hinge_flat(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    if len(labels) == 0:
+        return logits.sum() * 0.0
+    signs = 2.0 * labels.float() - 1.0
+    errors = 1.0 - logits * signs
+    errors_sorted, perm = torch.sort(errors, dim=0, descending=True)
+    perm = perm.data
+    gt_sorted = labels[perm]
+    grad = lovasz_grad(gt_sorted)
+    loss = torch.dot(F.relu(errors_sorted), grad)
+    return loss
+
+
+class LovaszHingeLoss(nn.Module):
+    """
+    Lovász Hinge Loss for direct Jaccard index / mIoU optimization.
+    Berman et al., CVPR 2018.
+    """
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        K = logits.shape[0]
+        if K == 0:
+            return torch.tensor(0.0, device=logits.device)
+        losses = []
+        for i in range(K):
+            lg = logits[i].view(-1)
+            tg = targets[i].view(-1)
+            losses.append(lovasz_hinge_flat(lg, tg))
+        return torch.stack(losses).mean()
+
+
 class SEFATrainer:
     """
     Ultra-fast trainer for SEFA-Forensics with balanced localization loss.
@@ -88,6 +129,7 @@ class SEFATrainer:
         trainable_params = [p for p in self.model.parameters() if p.requires_grad]
         self.optimizer = torch.optim.AdamW(trainable_params, lr=lr, weight_decay=weight_decay)
         self.dice_loss_fn = FocalTverskyLoss(alpha=0.7, beta=0.3, gamma=1.33)
+        self.lovasz_loss_fn = LovaszHingeLoss()
         self.bce_img_fn = nn.BCEWithLogitsLoss()
 
     def train_epoch(self, dataloader: DataLoader) -> Dict[str, float]:
@@ -107,7 +149,7 @@ class SEFATrainer:
 
             self.optimizer.zero_grad()
 
-            img_logits, pred_masks, _ = self.model(images)
+            img_logits, pred_masks, details = self.model(images, return_details=True)
 
             # Image-level forgery classification loss
             loss_img = self.bce_img_fn(img_logits, labels)
@@ -120,11 +162,15 @@ class SEFATrainer:
                 fake_preds = pred_masks[is_fake]
                 fake_targets = masks[is_fake]
                 loss_dice = self.dice_loss_fn(fake_preds, fake_targets)
-                # Positive-weighted BCE on forged regions to counteract background imbalance
+                if details is not None and "mask_logits" in details:
+                    loss_lovasz = self.lovasz_loss_fn(details["mask_logits"][is_fake], fake_targets)
+                else:
+                    loss_lovasz = torch.tensor(0.0, device=self.device)
                 weights = fake_targets * 4.0 + 1.0
                 loss_mask_bce = F.binary_cross_entropy(fake_preds, fake_targets, weight=weights)
             else:
                 loss_dice = torch.tensor(0.0, device=self.device)
+                loss_lovasz = torch.tensor(0.0, device=self.device)
                 loss_mask_bce = torch.tensor(0.0, device=self.device)
 
             if is_real.any():
@@ -133,7 +179,7 @@ class SEFATrainer:
             else:
                 loss_clean = torch.tensor(0.0, device=self.device)
 
-            loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.4 * loss_clean
+            loss_loc = 0.6 * loss_dice + 0.4 * loss_lovasz + 0.3 * loss_mask_bce + 0.4 * loss_clean
 
             # Total composite loss
             loss = self.bce_weight * loss_img + self.dice_weight * loss_loc
@@ -339,7 +385,7 @@ class SEFATrainer:
                         spatial_hw=it["hw"],
                         cls_token=cls_t,
                     )
-                    pred_masks, _ = self.model.progressive_decoder(feat_grid, imgs, patch_logits=patch_logits)
+                    pred_masks, mask_logits = self.model.progressive_decoder(feat_grid, imgs, patch_logits=patch_logits)
 
                     loss_img = self.bce_img_fn(img_logits, lbls)
                     is_fake = (lbls == 1.0).squeeze(-1)
@@ -348,7 +394,9 @@ class SEFATrainer:
                     if is_fake.any():
                         fake_preds = pred_masks[is_fake]
                         fake_targets = msks[is_fake]
+                        fake_logits = mask_logits[is_fake]
                         loss_dice = self.dice_loss_fn(fake_preds, fake_targets)
+                        loss_lovasz = self.lovasz_loss_fn(fake_logits, fake_targets)
                         weights = fake_targets * 4.0 + 1.0
                         loss_mask_bce = F.binary_cross_entropy(fake_preds, fake_targets, weight=weights)
                         # Multi-scale patch supervision
@@ -356,6 +404,7 @@ class SEFATrainer:
                         loss_patch_bce = F.binary_cross_entropy_with_logits(patch_logits[is_fake], target_patch)
                     else:
                         loss_dice = torch.tensor(0.0, device=self.device)
+                        loss_lovasz = torch.tensor(0.0, device=self.device)
                         loss_mask_bce = torch.tensor(0.0, device=self.device)
                         loss_patch_bce = torch.tensor(0.0, device=self.device)
 
@@ -364,7 +413,7 @@ class SEFATrainer:
                     else:
                         loss_clean = torch.tensor(0.0, device=self.device)
 
-                    loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.3 * loss_patch_bce + 0.4 * loss_clean
+                    loss_loc = 0.6 * loss_dice + 0.4 * loss_lovasz + 0.3 * loss_mask_bce + 0.3 * loss_patch_bce + 0.4 * loss_clean
                     loss = self.bce_weight * loss_img + self.dice_weight * loss_loc
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_([p for p in self.model.parameters() if p.requires_grad], max_norm=1.0)
