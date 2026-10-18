@@ -124,7 +124,7 @@ class ProgressiveLocalizationDecoder(nn.Module):
         image: [B, 3, H, W] normalized input image
         patch_logits: [B, 1, H_p, W_p] optional multi-quantile patch prior logits
         Returns:
-            pred_mask: [B, 1, H, W] in [0, 1]
+            pred_mask: [B, 1, H, W] in [0, 1] edge-snapped boundary-guided mask
             logits: [B, 1, H, W] continuous localization logits
         """
         B, _, H, W = image.shape
@@ -153,7 +153,29 @@ class ProgressiveLocalizationDecoder(nn.Module):
 
         cat_feat = torch.cat([x2, edge], dim=1)
         logits = self.final_conv(cat_feat)
-        return torch.sigmoid(logits), logits
+        raw_mask = torch.sigmoid(logits)
+
+        # Step 3: Multi-scale patch prior fusion & PyTorch Guided Filter edge snapping
+        if patch_logits is not None:
+            p_full = torch.sigmoid(F.interpolate(patch_logits, size=(H, W), mode="bilinear", align_corners=False))
+            fused = 0.70 * raw_mask + 0.30 * p_full
+        else:
+            fused = raw_mask
+
+        pad = 8
+        box = nn.AvgPool2d(kernel_size=2 * pad + 1, stride=1, padding=pad, count_include_pad=False)
+        g_norm = (gray - gray.min()) / (gray.max() - gray.min() + 1e-6)
+        m_I = box(g_norm)
+        m_p = box(fused)
+        c_I = box(g_norm * g_norm)
+        c_Ip = box(g_norm * fused)
+        var_I = c_I - m_I * m_I
+        cov_Ip = c_Ip - m_I * m_p
+        a = cov_Ip / (var_I + 0.01)
+        b = m_p - a * m_I
+        refined_mask = torch.clamp(box(a) * g_norm + box(b), 0.0, 1.0)
+
+        return refined_mask, logits
 
 
 class BoundaryGuidedRefiner(nn.Module):
