@@ -149,3 +149,64 @@ class SEFAModel(nn.Module):
             }
 
         return img_logits, refined_mask, details
+
+    @torch.no_grad()
+    def forward_tiled(
+        self,
+        x: torch.Tensor,
+        tile_size: int = 224,
+        stride: int = 112,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        High-Resolution Tiled Inference with Gaussian Window Blending.
+        Enables pixel-precise localization for high-resolution images (e.g. 512x512, 1024x1024)
+        without downsampling small manipulation artifacts.
+        Args:
+            x: Input image tensor [B, 3, H, W]
+            tile_size: Local window size (default 224)
+            stride: Sliding window stride (default 112 for 50% overlap)
+        Returns:
+            img_logits: [B, 1] aggregated global image authenticity logit
+            full_mask: [B, 1, H, W] seamlessly stitched full-resolution localization mask
+        """
+        B, C, H, W = x.shape
+        if H <= tile_size and W <= tile_size:
+            img_logits, mask, _ = self.forward(x)
+            return img_logits, mask
+
+        # Gaussian blending window to eliminate seam artifacts
+        y, x_coord = torch.meshgrid(
+            torch.linspace(-1, 1, tile_size, device=x.device),
+            torch.linspace(-1, 1, tile_size, device=x.device),
+            indexing="ij"
+        )
+        d = torch.sqrt(x_coord * x_coord + y * y)
+        sigma, mu = 0.5, 0.0
+        gauss_w = torch.exp(-((d - mu) ** 2 / (2.0 * sigma ** 2)))
+        gauss_w = gauss_w.unsqueeze(0).unsqueeze(0)  # [1, 1, tile_size, tile_size]
+
+        full_pred = torch.zeros(B, 1, H, W, device=x.device)
+        weight_sum = torch.zeros(B, 1, H, W, device=x.device)
+        tile_img_logits = []
+
+        y_steps = list(range(0, max(1, H - tile_size + 1), stride))
+        if len(y_steps) == 0 or y_steps[-1] != H - tile_size:
+            y_steps.append(max(0, H - tile_size))
+        x_steps = list(range(0, max(1, W - tile_size + 1), stride))
+        if len(x_steps) == 0 or x_steps[-1] != W - tile_size:
+            x_steps.append(max(0, W - tile_size))
+
+        y_steps = sorted(list(set(y_steps)))
+        x_steps = sorted(list(set(x_steps)))
+
+        for ys in y_steps:
+            for xs in x_steps:
+                tile = x[:, :, ys : ys + tile_size, xs : xs + tile_size]
+                t_logits, t_mask, _ = self.forward(tile)
+                tile_img_logits.append(t_logits)
+                full_pred[:, :, ys : ys + tile_size, xs : xs + tile_size] += t_mask * gauss_w
+                weight_sum[:, :, ys : ys + tile_size, xs : xs + tile_size] += gauss_w
+
+        full_mask = full_pred / torch.clamp(weight_sum, min=1e-6)
+        global_logit = torch.stack(tile_img_logits, dim=0).mean(dim=0)
+        return global_logit, full_mask
