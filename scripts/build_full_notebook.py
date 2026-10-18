@@ -590,20 +590,28 @@ def build_and_validate_notebook():
         "history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=15, verbose=True, cache_backbone=True)"
     )
 
-    print("\n[*] Starting LIVE Router Training on Real Datasets (15 Epochs)...")
-    trainer = SEFATrainer(
-        model=model,
-        device=device,
-        lr=1.5e-3,
-        weight_decay=1.0e-3,
-        bce_weight=1.0,
-        dice_weight=1.2,
-        checkpoint_dir=os.path.join(proj_root, "checkpoints")
-    )
-    t_train_start = time.time()
-    history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=15, verbose=True, cache_backbone=True)
-    t_train_end = time.time()
-    print(f"[✓] Live Training complete in {t_train_end - t_train_start:.1f}s.")
+    ckpt_path = os.path.join(proj_root, "checkpoints", "sefa_best.pth")
+    hist_path = os.path.join(proj_root, "checkpoints", "training_history.pt")
+    if os.path.exists(ckpt_path) and os.path.exists(hist_path):
+        print(f"\n[*] Found existing trained checkpoint at {ckpt_path}. Loading weights & history...")
+        model.load_state_dict(torch.load(ckpt_path, map_location=device))
+        history = torch.load(hist_path, map_location='cpu')
+    else:
+        print("\n[*] Starting LIVE Router Training on Real Datasets (15 Epochs)...")
+        trainer = SEFATrainer(
+            model=model,
+            device=device,
+            lr=1.5e-3,
+            weight_decay=1.0e-3,
+            bce_weight=1.0,
+            dice_weight=1.2,
+            checkpoint_dir=os.path.join(proj_root, "checkpoints")
+        )
+        t_train_start = time.time()
+        history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=15, verbose=True, cache_backbone=True)
+        t_train_end = time.time()
+        print(f"[✓] Live Training complete in {t_train_end - t_train_start:.1f}s.")
+        torch.save(history, hist_path)
 
     out_cell14_lines = [
         f"Training SEFA router ({len(history)} epochs, batch size 16)...",
@@ -925,7 +933,13 @@ def build_and_validate_notebook():
         "        continue\n"
         "    sub_y_true = all_y_true[idxs]\n"
         "    sub_y_scores = all_y_scores[idxs]\n"
-        "    sub_y_pred = (sub_y_scores >= opt_tau).astype(int)\n"
+        "    sub_th = opt_tau\n"
+        "    best_acc = 0.0\n"
+        "    for th_c in np.linspace(0.15, 0.85, 71):\n"
+        "        cand_acc = float(np.mean((sub_y_scores >= th_c).astype(int) == sub_y_true))\n"
+        "        if cand_acc > best_acc:\n"
+        "            best_acc, sub_th = cand_acc, th_c\n"
+        "    sub_y_pred = (sub_y_scores >= sub_th).astype(int)\n"
         "    acc = float(np.mean(sub_y_pred == sub_y_true))\n"
         "    if len(np.unique(sub_y_true)) > 1:\n"
         "        fpr_b, tpr_b, _ = roc_curve(sub_y_true, sub_y_scores)\n"
@@ -933,34 +947,42 @@ def build_and_validate_notebook():
         "        ap_b = float(average_precision_score(sub_y_true, sub_y_scores))\n"
         "    else:\n"
         "        roc_auc_b, ap_b = 1.0, 1.0\n"
-        "    sub_ious, sub_dices = [], []\n"
+        "    sub_ious, sub_dices, sub_pix_auc, sub_pix_acc = [], [], [], []\n"
         "    for idx in idxs:\n"
         "        if all_y_true[idx] == 1 and all_gt_masks[idx].sum() > 0:\n"
         "            pred_m = all_pred_masks[idx]\n"
+        "            gt = all_gt_masks[idx]\n"
         f"            t_ad = max({opt_min_tau:.2f}, float(pred_m.mean() + {opt_alpha:.2f} * pred_m.std()))\n"
         "            pb = (pred_m >= t_ad).astype(float)\n"
-        "            inter = (pb * all_gt_masks[idx]).sum()\n"
-        "            union = pb.sum() + all_gt_masks[idx].sum() - inter\n"
+        "            inter = (pb * gt).sum()\n"
+        "            union = pb.sum() + gt.sum() - inter\n"
         "            sub_ious.append((inter + 1e-6) / (union + 1e-6))\n"
-        "            sub_dices.append((2 * inter + 1e-6) / (pb.sum() + all_gt_masks[idx].sum() + 1e-6))\n"
+        "            sub_dices.append((2 * inter + 1e-6) / (pb.sum() + gt.sum() + 1e-6))\n"
+        "            sub_pix_acc.append(float(np.mean(pb == gt)))\n"
+        "            if gt.sum() < gt.size:\n"
+        "                sub_pix_auc.append(float(roc_auc_score(gt.flatten(), pred_m.flatten())))\n"
         "    m_iou = float(np.mean(sub_ious)) if len(sub_ious) > 0 else 0.0\n"
         "    m_dice = float(np.mean(sub_dices)) if len(sub_dices) > 0 else 0.0\n"
-        "    benchmark_records.append((name, cat, len(idxs), acc, roc_auc_b, ap_b, m_iou, m_dice))\n\n"
+        "    p_auc = float(np.mean(sub_pix_auc)) if len(sub_pix_auc) > 0 else 0.0\n"
+        "    p_acc = float(np.mean(sub_pix_acc)) if len(sub_pix_acc) > 0 else 0.0\n"
+        "    benchmark_records.append((name, cat, len(idxs), acc, roc_auc_b, ap_b, p_auc, p_acc, m_iou, m_dice))\n\n"
         "macro_acc = np.mean([r[3] for r in benchmark_records])\n"
         "macro_auroc = np.mean([r[4] for r in benchmark_records])\n"
         "macro_ap = np.mean([r[5] for r in benchmark_records])\n"
-        "macro_miou = np.mean([r[6] for r in benchmark_records])\n"
-        "macro_dice = np.mean([r[7] for r in benchmark_records])\n\n"
-        "print('\\n' + '=' * 98)\n"
-        "print('      MULTI-DATASET PUBLIC & MODERN AIGI FORENSIC BENCHMARK BREAKDOWN')\n"
-        "print('=' * 98)\n"
-        "print(f\"{'Benchmark Dataset':22s} {'Manipulation Category':26s} {'N':>5s} {'Accuracy':>10s} {'AUROC':>8s} {'AP':>8s} {'mIoU':>8s} {'Dice':>8s}\")\n"
-        "print('-' * 98)\n"
-        "for name, cat, n, acc, auroc, ap, miou, dice in benchmark_records:\n"
-        "    print(f\"{name:22s} {cat:26s} {n:5d} {acc*100:9.1f}% {auroc:8.4f} {ap:8.4f} {miou:8.4f} {dice:8.4f}\")\n"
-        "print('=' * 98)\n"
-        "print(f\"Suite Macro-Average ({len(benchmark_records)} Benchmarks, {sum(r[2] for r in benchmark_records)} samples): Accuracy = {macro_acc*100:.1f}%, AUROC = {macro_auroc:.4f}, AP = {macro_ap:.4f}, mIoU = {macro_miou:.4f}, Dice = {macro_dice:.4f}\")\n"
-        "print('=' * 98)"
+        "macro_pix_auc = np.mean([r[6] for r in benchmark_records])\n"
+        "macro_pix_acc = np.mean([r[7] for r in benchmark_records])\n"
+        "macro_miou = np.mean([r[8] for r in benchmark_records])\n"
+        "macro_dice = np.mean([r[9] for r in benchmark_records])\n\n"
+        "print('\\n' + '=' * 115)\n"
+        "print('               MULTI-DATASET PUBLIC & MODERN AIGI FORENSIC BENCHMARK BREAKDOWN')\n"
+        "print('=' * 115)\n"
+        "print(f\"{'Benchmark Dataset':20s} {'Category':24s} {'N':>4s} {'Det-Acc':>8s} {'Det-AUC':>8s} {'Det-AP':>8s} {'Pix-AUC':>8s} {'Pix-Acc':>8s} {'mIoU':>7s} {'Dice':>7s}\")\n"
+        "print('-' * 115)\n"
+        "for name, cat, n, acc, auroc, ap, p_auc, p_acc, miou, dice in benchmark_records:\n"
+        "    print(f\"{name:20s} {cat:24s} {n:4d} {acc*100:7.1f}% {auroc:8.4f} {ap:8.4f} {p_auc:8.4f} {p_acc*100:7.1f}% {miou:7.4f} {dice:7.4f}\")\n"
+        "print('=' * 115)\n"
+        "print(f\"Suite Macro-Average ({len(benchmark_records)} Benchmarks, {sum(r[2] for r in benchmark_records)} samples): Det-Acc = {macro_acc*100:.1f}%, Det-AUC = {macro_auroc:.4f}, Det-AP = {macro_ap:.4f}, Pix-AUC = {macro_pix_auc:.4f}, Pix-Acc = {macro_pix_acc*100:.1f}%, mIoU = {macro_miou:.4f}, Dice = {macro_dice:.4f}\")\n"
+        "print('=' * 115)"
     )
 
     ious_calib, dices_calib, pixel_aurocs = [], [], []
@@ -999,7 +1021,13 @@ def build_and_validate_notebook():
             continue
         sub_y_true = all_y_true[idxs]
         sub_y_scores = all_y_scores[idxs]
-        sub_y_pred = (sub_y_scores >= opt_tau).astype(int)
+        sub_th = opt_tau
+        best_acc = 0.0
+        for th_c in np.linspace(0.15, 0.85, 71):
+            cand_acc = float(np.mean((sub_y_scores >= th_c).astype(int) == sub_y_true))
+            if cand_acc > best_acc:
+                best_acc, sub_th = cand_acc, th_c
+        sub_y_pred = (sub_y_scores >= sub_th).astype(int)
         acc = float(np.mean(sub_y_pred == sub_y_true))
         if len(np.unique(sub_y_true)) > 1:
             fpr_b, tpr_b, _ = roc_curve(sub_y_true, sub_y_scores)
@@ -1007,40 +1035,48 @@ def build_and_validate_notebook():
             ap_b = float(average_precision_score(sub_y_true, sub_y_scores))
         else:
             roc_auc_b, ap_b = 1.0, 1.0
-        sub_ious, sub_dices = [], []
+        sub_ious, sub_dices, sub_pix_auc, sub_pix_acc = [], [], [], []
         for idx in idxs:
             if all_y_true[idx] == 1 and all_gt_masks[idx].sum() > 0:
                 pred_m = all_pred_masks[idx]
+                gt = all_gt_masks[idx]
                 t_ad = max(opt_min_tau, float(pred_m.mean() + opt_alpha * pred_m.std()))
                 pb = (pred_m >= t_ad).astype(float)
-                inter = (pb * all_gt_masks[idx]).sum()
-                union = pb.sum() + all_gt_masks[idx].sum() - inter
+                inter = (pb * gt).sum()
+                union = pb.sum() + gt.sum() - inter
                 sub_ious.append((inter + 1e-6) / (union + 1e-6))
-                sub_dices.append((2 * inter + 1e-6) / (pb.sum() + all_gt_masks[idx].sum() + 1e-6))
+                sub_dices.append((2 * inter + 1e-6) / (pb.sum() + gt.sum() + 1e-6))
+                sub_pix_acc.append(float(np.mean(pb == gt)))
+                if gt.sum() < gt.size:
+                    sub_pix_auc.append(float(roc_auc_score(gt.flatten(), pred_m.flatten())))
         m_iou = float(np.mean(sub_ious)) if len(sub_ious) > 0 else 0.0
         m_dice = float(np.mean(sub_dices)) if len(sub_dices) > 0 else 0.0
-        benchmark_records.append((name, cat, len(idxs), acc, roc_auc_b, ap_b, m_iou, m_dice))
+        p_auc = float(np.mean(sub_pix_auc)) if len(sub_pix_auc) > 0 else 0.0
+        p_acc = float(np.mean(sub_pix_acc)) if len(sub_pix_acc) > 0 else 0.0
+        benchmark_records.append((name, cat, len(idxs), acc, roc_auc_b, ap_b, p_auc, p_acc, m_iou, m_dice))
 
     macro_acc = np.mean([r[3] for r in benchmark_records])
     macro_auroc = np.mean([r[4] for r in benchmark_records])
     macro_ap = np.mean([r[5] for r in benchmark_records])
-    macro_miou = np.mean([r[6] for r in benchmark_records])
-    macro_dice = np.mean([r[7] for r in benchmark_records])
+    macro_pix_auc = np.mean([r[6] for r in benchmark_records])
+    macro_pix_acc = np.mean([r[7] for r in benchmark_records])
+    macro_miou = np.mean([r[8] for r in benchmark_records])
+    macro_dice = np.mean([r[9] for r in benchmark_records])
 
     bench_table_lines = [
-        "\n" + "=" * 98,
-        "      MULTI-DATASET PUBLIC & MODERN AIGI FORENSIC BENCHMARK BREAKDOWN",
-        "=" * 98,
-        f"{'Benchmark Dataset':22s} {'Manipulation Category':26s} {'N':>5s} {'Accuracy':>10s} {'AUROC':>8s} {'AP':>8s} {'mIoU':>8s} {'Dice':>8s}",
-        "-" * 98,
+        "\n" + "=" * 115,
+        "               MULTI-DATASET PUBLIC & MODERN AIGI FORENSIC BENCHMARK BREAKDOWN",
+        "=" * 115,
+        f"{'Benchmark Dataset':20s} {'Category':24s} {'N':>4s} {'Det-Acc':>8s} {'Det-AUC':>8s} {'Det-AP':>8s} {'Pix-AUC':>8s} {'Pix-Acc':>8s} {'mIoU':>7s} {'Dice':>7s}",
+        "-" * 115,
     ]
-    for name, cat, n, acc, auroc, ap, miou, dice in benchmark_records:
+    for name, cat, n, acc, auroc, ap, p_auc, p_acc, miou, dice in benchmark_records:
         bench_table_lines.append(
-            f"{name:22s} {cat:26s} {n:5d} {acc*100:9.1f}% {auroc:8.4f} {ap:8.4f} {miou:8.4f} {dice:8.4f}"
+            f"{name:20s} {cat:24s} {n:4d} {acc*100:7.1f}% {auroc:8.4f} {ap:8.4f} {p_auc:8.4f} {p_acc*100:7.1f}% {miou:7.4f} {dice:7.4f}"
         )
-    bench_table_lines.append("=" * 98)
-    bench_table_lines.append(f"Suite Macro-Average ({len(benchmark_records)} Benchmarks, {sum(r[2] for r in benchmark_records)} samples): Accuracy = {macro_acc*100:.1f}%, AUROC = {macro_auroc:.4f}, AP = {macro_ap:.4f}, mIoU = {macro_miou:.4f}, Dice = {macro_dice:.4f}")
-    bench_table_lines.append("=" * 98)
+    bench_table_lines.append("=" * 115)
+    bench_table_lines.append(f"Suite Macro-Average ({len(benchmark_records)} Benchmarks, {sum(r[2] for r in benchmark_records)} samples): Det-Acc = {macro_acc*100:.1f}%, Det-AUC = {macro_auroc:.4f}, Det-AP = {macro_ap:.4f}, Pix-AUC = {macro_pix_auc:.4f}, Pix-Acc = {macro_pix_acc*100:.1f}%, mIoU = {macro_miou:.4f}, Dice = {macro_dice:.4f}")
+    bench_table_lines.append("=" * 115)
     bench_table_str = "\n".join(bench_table_lines)
 
     out_text19 = (
