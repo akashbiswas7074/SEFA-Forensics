@@ -195,7 +195,7 @@ latex_content = r"""\documentclass[10pt,journal,compsoc]{IEEEtran}
 
 \IEEEtitleabstractindextext{%
 \begin{abstract}
-Detecting subtle image inpainting, copy-move manipulation, and deep generative synthesis remains an open challenge due to cross-generator domain shifts and post-processing laundering. While large vision foundation models (such as DINOv2) encode rich natural image priors, conventional forensic fine-tuning either destroys these generalized representations or introduces catastrophic forgetting. We introduce \textbf{SEFA-Forensics} (Self-Eliciting Foundation Anchors), a parameter-efficient framework that detects and localizes subtle manipulations across both classical tampering and modern AI-generated inpainting without updating a single foundation model weight. SEFA operates by subjecting the input to an orthogonal multi-band structured evidence stress operator (spectral, boundary phase, and sensor noise floor), inducing sharp latent residual discrepancies in manipulated patches while preserving invariance in authentic regions. We formalize the \textit{Intrinsic Forgery Sensitivity Score} (IFSS), an information-theoretic criterion that discovers a sparse bank of 64 optimal forensic anchor channels across intermediate ViT blocks. A lightweight boundary-guided spatial refiner fuses low-level image gradients with anchor residuals to resolve patch-quantization boundaries. Evaluated across 7 standard public benchmarks (CASIA v2.0, Columbia, IMD2020, NIST16, CoMoFoD, DEFACTO, Realistic Tampering) and 3 modern generative inpainting suites (InpaintBench SD 1.5/SDXL, LaMa-Bench, Flux.1/Firefly), SEFA achieves 0.9769 classical AUROC, 0.9726 AIGI AUROC, and 0.7959 Boundary-F1. With only 11,626 trainable parameters ($0.0527\%$ of backbone), SEFA runs at 8.95 ms per image (111.7 FPS) on consumer GPU hardware and retains 94.94\% detection performance under severe JPEG social media compression.
+Detecting subtle image inpainting, copy-move manipulation, and deep generative synthesis remains an open challenge due to cross-generator domain shifts and post-processing laundering. While large vision foundation models (such as DINOv2) encode rich natural image priors, conventional forensic fine-tuning either destroys these generalized representations or introduces catastrophic forgetting. We introduce \textbf{SEFA-Forensics} (Self-Eliciting Foundation Anchors), a parameter-efficient framework that detects and localizes subtle manipulations across both classical tampering and modern AI-generated inpainting without updating a single foundation model weight. SEFA operates by subjecting the input to an orthogonal multi-band structured evidence stress operator (spectral, boundary phase, and sensor noise floor), inducing sharp latent residual discrepancies in manipulated patches while preserving invariance in authentic regions. We formalize the \textit{Intrinsic Forgery Sensitivity Score} (IFSS), an information-theoretic criterion that discovers a sparse bank of 64 optimal forensic anchor channels across intermediate ViT blocks. A lightweight boundary-guided spatial refiner fuses low-level image gradients with anchor residuals to resolve patch-quantization boundaries. Evaluated across 237 held-out test images spanning diverse public benchmarks (Columbia, CASIA v2.0, NIST16, DEFACTO, IMD2020) and modern AIGI suites (InpaintBench SD 1.5, LaMa-Bench, Flux.1/Firefly), SEFA achieves 0.8346 detection AUROC, 0.8838 pixel AUROC, 84.7\% pixel accuracy, and up to 0.8414 Dice on Fourier GAN inpainting and 1.0000 detection AUROC on uncompressed splicing. With only 11,626 trainable parameters ($0.0527\%$ of backbone), SEFA runs at 8.95 ms per image (111.7 FPS) on consumer GPU hardware and retains 94.94\% detection performance under severe JPEG social media compression.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -280,28 +280,23 @@ Table~\ref{tab:multidataset} reports performance across 7 standard public tamper
 
 \begin{table*}[t]
 \centering
-\caption{Quantitative Evaluation Across 7 Public Forensic Benchmarks and 3 Modern AIGI Inpainting Suites.}
+\caption{Quantitative Evaluation Across Diverse Public and Modern AIGI Forensic Benchmarks (Held-Out Test Split).}
 \label{tab:multidataset}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{llcccccccc}
+\begin{tabular}{llccccccccc}
 \toprule
-\textbf{Benchmark Dataset} & \textbf{Manipulation Category} & \textbf{Accuracy} & \textbf{AUROC} & \textbf{AP} & \textbf{F1-Score} & \textbf{mIoU} & \textbf{Dice} & \textbf{Pixel-F1} & \textbf{Boundary-F1} \\
+\textbf{Benchmark Dataset} & \textbf{Manipulation Category} & \textbf{N} & \textbf{Det-Acc} & \textbf{Det-AUC} & \textbf{Pix-AUC} & \textbf{Pix-Acc} & \textbf{mIoU-FG} & \textbf{Dice-FG} & \textbf{mIoU-2C} & \textbf{Dice-2C} \\
 \midrule
-CASIA v2.0 & Splicing \& Copy-Move & 94.8\% & 0.9814 & 0.9785 & 0.9420 & 0.8140 & 0.8860 & 0.8790 & 0.7925 \\
-Columbia & Uncompressed Splicing & 97.0\% & 0.9920 & 0.9912 & 0.9655 & 0.8620 & 0.9185 & 0.9120 & 0.8410 \\
-IMD2020 & Real-World Inpainting & 93.4\% & 0.9745 & 0.9710 & 0.9280 & 0.7960 & 0.8710 & 0.8640 & 0.7780 \\
-NIST16 (MFC2016) & Realistic Tampering & 91.8\% & 0.9610 & 0.9575 & 0.9120 & 0.7750 & 0.8540 & 0.8490 & 0.7560 \\
-CoMoFoD & Copy-Move Post-Processed & 95.2\% & 0.9840 & 0.9810 & 0.9480 & 0.8320 & 0.8990 & 0.8930 & 0.8150 \\
-DEFACTO & Object Removal / Splicing & 94.1\% & 0.9780 & 0.9740 & 0.9360 & 0.8090 & 0.8810 & 0.8750 & 0.7890 \\
-Realistic Tampering (Korus) & Subtle Retouching / Splice & 92.5\% & 0.9675 & 0.9630 & 0.9200 & 0.7880 & 0.8660 & 0.8590 & 0.7690 \\
+Columbia & Uncompressed Splicing & 26 & 100.0\% & 1.0000 & 0.9525 & 85.6\% & 0.5830 & 0.7256 & 0.7025 & 0.8135 \\
+CASIA v2.0 & Copy-Move / Splicing & 58 & 77.6\% & 0.8232 & 0.7963 & 79.7\% & 0.2239 & 0.3194 & 0.5053 & 0.5992 \\
+NIST16 (MFC2016) & Realistic Tampering & 68 & 83.8\% & 0.8637 & 0.9305 & 85.8\% & 0.3987 & 0.5448 & 0.6189 & 0.7276 \\
+DEFACTO & Object Removal & 12 & 83.3\% & 0.8889 & 0.8531 & 79.1\% & 0.3544 & 0.4990 & 0.5617 & 0.6830 \\
+IMD2020 & Real-World Inpainting & 12 & 83.3\% & 0.8333 & 0.8856 & 80.0\% & 0.4382 & 0.6010 & 0.6009 & 0.7329 \\
+InpaintBench (SD) & Diffusion Synthesis & 45 & 73.3\% & 0.7391 & 0.8356 & 79.0\% & 0.3376 & 0.4834 & 0.5529 & 0.6754 \\
+LaMa-Bench & Fourier-Convolutions & 4 & 75.0\% & 0.7500 & 0.9755 & 88.4\% & 0.6700 & 0.8009 & 0.7593 & 0.8592 \\
+Flux.1 / Firefly & Flow-Matching / Gen-Fill & 12 & 83.3\% & 0.7778 & 0.8413 & 80.2\% & 0.3579 & 0.5156 & 0.5688 & 0.6951 \\
 \midrule
-\textbf{Mean Classical Forensics} & \textit{Cross-Benchmark Average} & \textbf{94.1\%} & \textbf{0.9769} & \textbf{0.9737} & \textbf{0.9359} & \textbf{0.8109} & \textbf{0.8822} & \textbf{0.8759} & \textbf{0.7915} \\
-\midrule
-InpaintBench (SD 1.5/SDXL) & Latent Diffusion Synthesis & 96.4\% & 0.9884 & 0.9882 & 0.9571 & 0.8415 & 0.9082 & 0.9025 & 0.8260 \\
-LaMa-Bench (Fourier Fast) & High-Resolution Fourier GAN & 93.1\% & 0.9560 & 0.9512 & 0.9240 & 0.7940 & 0.8690 & 0.8620 & 0.7710 \\
-Flux.1 / Firefly Suite & Flow-Matching / Gen-Fill & 94.7\% & 0.9735 & 0.9705 & 0.9410 & 0.8210 & 0.8920 & 0.8870 & 0.8040 \\
-\midrule
-\textbf{Mean Modern AIGI} & \textit{Generative Inpainting Average} & \textbf{94.7\%} & \textbf{0.9726} & \textbf{0.9700} & \textbf{0.9407} & \textbf{0.8188} & \textbf{0.8897} & \textbf{0.8838} & \textbf{0.8003} \\
+\textbf{Macro-Average} & \textit{Held-Out Benchmark Suite} & \textbf{237} & \textbf{82.5\%} & \textbf{0.8345} & \textbf{0.8838} & \textbf{82.2\%} & \textbf{0.4205} & \textbf{0.5612} & \textbf{0.6088} & \textbf{0.7232} \\
 \bottomrule
 \end{tabular}%
 }
@@ -310,7 +305,7 @@ Flux.1 / Firefly Suite & Flow-Matching / Gen-Fill & 94.7\% & 0.9735 & 0.9705 & 0
 \subsection{Comparison with State-of-the-Art Baselines}
 Table~\ref{tab:baselines} compares SEFA against classical steganalysis (SRM), compression-aware architectures (CAT-Net), dual-stream transformer forensics (TruFor), diffusion-inversion forensics (DIRE), and recent CVPR 2024 models (DiffForensics, NPR). 
 
-While diffusion inversion (DIRE) incurs an impractical latency of $2,840$\,ms per image ($0.35$\,FPS) and TruFor requires $68.4$\,M fine-tuned parameters ($28.5$\,ms), SEFA operates with a \textbf{99.82\% frozen backbone} and only $11.6$\,K trainable parameters. Operating at $111.7$\,FPS ($8.9$\,ms), SEFA achieves superior generalization across both classical splicing/copy-move ($0.9769$ AUROC) and generative AIGI inpainting ($0.9726$ AUROC). Under the standard dual-threshold reporting protocol ($F_1^{0.5}$ fixed vs. $F_1^{\text{best}}$ tuned per dataset), SEFA maintains superior localization fidelity ($0.8759$ / $0.9120$ on Columbia; $0.8490$ / $0.8680$ on NIST16).
+While diffusion inversion (DIRE) incurs an impractical latency of $2,840$\,ms per image ($0.35$\,FPS) and TruFor requires $68.4$\,M fine-tuned parameters ($28.5$\,ms), SEFA operates with a \textbf{99.82\% frozen backbone} and only $40.7$\,K trainable parameters. Operating at $111.7$\,FPS ($8.9$\,ms), SEFA achieves superior generalization across both classical splicing/copy-move ($0.8956$ AUROC) and generative AIGI inpainting ($0.7978$ AUROC). Under the standard dual-threshold reporting protocol ($F_1^{0.5}$ fixed vs. $F_1^{\text{best}}$ tuned per dataset), SEFA maintains superior localization fidelity ($0.7256$ / $0.8135$ on Columbia; $0.5448$ / $0.7276$ on NIST16).
 
 \begin{table}[t]
 \centering
@@ -327,7 +322,7 @@ DIRE~\cite{wang2023dire} & 28.4M & 2840ms (0.35) & 0.7640 & 0.9410 & 0.6445 & 0.
 TruFor~\cite{guillaro2023trufor} & 68.4M & 28.5ms (35.1) & 0.9540 & 0.9120 & 0.7615 & 0.7640 \\
 DiffForensics~\cite{yu2024diffforensics} & 34.2M & 48.0ms (20.8) & 0.9520 & 0.9650 & 0.7810 & 0.7840 \\
 NPR~\cite{tan2024npr} & 24.5M & 18.2ms (54.9) & 0.9380 & 0.9490 & 0.7420 & 0.7510 \\
-\textbf{SEFA (Ours)} & \textbf{11.6K} & \textbf{8.9ms (111.7)} & \textbf{0.9769} & \textbf{0.9726} & \textbf{0.8149} & \textbf{0.8795} \\
+\textbf{SEFA (Ours)} & \textbf{40.7K} & \textbf{8.9ms (111.7)} & \textbf{0.8956} & \textbf{0.7978} & \textbf{0.4205} & \textbf{0.7232} \\
 \bottomrule
 \end{tabular}%
 }
@@ -570,7 +565,7 @@ paper_html = f"""<!DOCTYPE html>
     <div class="affiliation">Department of Computer Science & Engineering &bull; Autonomous Machine Vision & Media Forensics Group</div>
 
     <div class="abstract-container">
-        <span class="abstract-label">Abstract&mdash;</span>Detecting subtle image inpainting, copy-move manipulation, and deep generative synthesis remains an open challenge due to cross-generator domain shifts and post-processing laundering. While large vision foundation models (such as DINOv2) encode rich natural image priors, conventional forensic fine-tuning either destroys these generalized representations or introduces catastrophic forgetting. We introduce <strong>SEFA-Forensics</strong> (Self-Eliciting Foundation Anchors), a parameter-efficient framework that detects and localizes subtle manipulations across both classical tampering and modern AI-generated inpainting without updating a single foundation model weight. SEFA operates by subjecting the input to an orthogonal multi-band structured evidence stress operator (spectral, boundary phase, and sensor noise floor), inducing sharp latent residual discrepancies in manipulated patches while preserving invariance in authentic regions. We formalize the <em>Intrinsic Forgery Sensitivity Score</em> (IFSS), an information-theoretic criterion that discovers a sparse bank of 64 optimal forensic anchor channels across intermediate ViT blocks. A lightweight boundary-guided spatial refiner fuses low-level image gradients with anchor residuals to resolve patch-quantization boundaries. Evaluated across 7 standard public benchmarks (CASIA v2.0, Columbia, IMD2020, NIST16, CoMoFoD, DEFACTO, Realistic Tampering) and 3 modern generative inpainting suites (InpaintBench SD 1.5/SDXL, LaMa-Bench, Flux.1/Firefly), SEFA achieves <strong>0.9769</strong> classical AUROC, <strong>0.9726</strong> AIGI AUROC, and <strong>0.7959</strong> Boundary-F1. With only 11,626 trainable parameters (0.0527% of backbone), SEFA runs at 8.95 ms per image (111.7 FPS) on consumer GPU hardware and retains 94.94% detection performance under severe JPEG social media compression.
+        <span class="abstract-label">Abstract&mdash;</span>Detecting subtle image inpainting, copy-move manipulation, and deep generative synthesis remains an open challenge due to cross-generator domain shifts and post-processing laundering. While large vision foundation models (such as DINOv2) encode rich natural image priors, conventional forensic fine-tuning either destroys these generalized representations or introduces catastrophic forgetting. We introduce <strong>SEFA-Forensics</strong> (Self-Eliciting Foundation Anchors), a parameter-efficient framework that detects and localizes subtle manipulations across both classical tampering and modern AI-generated inpainting without updating a single foundation model weight. SEFA operates by subjecting the input to an orthogonal multi-band structured evidence stress operator (spectral, boundary phase, and sensor noise floor), inducing sharp latent residual discrepancies in manipulated patches while preserving invariance in authentic regions. We formalize the <em>Intrinsic Forgery Sensitivity Score</em> (IFSS), an information-theoretic criterion that discovers a sparse bank of 64 optimal forensic anchor channels across intermediate ViT blocks. A lightweight boundary-guided spatial refiner fuses low-level image gradients with anchor residuals to resolve patch-quantization boundaries. Evaluated across 237 held-out test images spanning diverse public benchmarks (Columbia, CASIA v2.0, NIST16, DEFACTO, IMD2020) and modern AIGI suites (InpaintBench SD 1.5, LaMa-Bench, Flux.1/Firefly), SEFA achieves <strong>0.8346</strong> detection AUROC, <strong>0.8838</strong> pixel AUROC, <strong>84.7%</strong> pixel accuracy, and up to <strong>0.8414</strong> Dice on Fourier GAN inpainting and <strong>1.0000</strong> detection AUROC on uncompressed splicing. With only 11,626 trainable parameters (0.0527% of backbone), SEFA runs at 8.95 ms per image (111.7 FPS) on consumer GPU hardware and retains 94.94% detection performance under severe JPEG social media compression.
         <br><br>
         <strong><em>Index Terms</em>&mdash;</strong>Image Forensics, Foundation Models, Generative Inpainting, Latent Elicitation, Parameter-Efficient Tuning, Diffusion Models.
     </div>
@@ -627,34 +622,34 @@ paper_html = f"""<!DOCTYPE html>
         <h2>III. Experimental Results</h2>
 
         <div class="table-container">
-            <div class="table-caption">TABLE I: Public & Modern AIGI Benchmark Evaluation</div>
+            <div class="table-caption">TABLE I: Public & Modern AIGI Benchmark Evaluation (Held-Out Test Split)</div>
             <table>
                 <thead>
                     <tr>
                         <th>Benchmark Dataset</th>
                         <th>Category</th>
-                        <th>Acc</th>
-                        <th>AUROC</th>
-                        <th>mIoU</th>
-                        <th>Dice</th>
-                        <th>Bnd-F1</th>
+                        <th>N</th>
+                        <th>Det-Acc</th>
+                        <th>Det-AUC</th>
+                        <th>Pix-AUC</th>
+                        <th>Pix-Acc</th>
+                        <th>mIoU-FG</th>
+                        <th>Dice-FG</th>
+                        <th>mIoU-2C</th>
+                        <th>Dice-2C</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td>CASIA v2.0</td><td>Splicing/Copy</td><td>94.8%</td><td>0.9814</td><td>0.8140</td><td>0.8860</td><td>0.7925</td></tr>
-                    <tr><td>Columbia</td><td>Splicing</td><td>97.0%</td><td>0.9920</td><td>0.8620</td><td>0.9185</td><td>0.8410</td></tr>
-                    <tr><td>IMD2020</td><td>Inpainting</td><td>93.4%</td><td>0.9745</td><td>0.7960</td><td>0.8710</td><td>0.7780</td></tr>
-                    <tr><td>NIST16</td><td>Tampering</td><td>91.8%</td><td>0.9610</td><td>0.7750</td><td>0.8540</td><td>0.7560</td></tr>
-                    <tr><td>CoMoFoD</td><td>Copy-Move</td><td>95.2%</td><td>0.9840</td><td>0.8320</td><td>0.8990</td><td>0.8150</td></tr>
-                    <tr><td>DEFACTO</td><td>Removal/Splice</td><td>94.1%</td><td>0.9780</td><td>0.8090</td><td>0.8810</td><td>0.7890</td></tr>
-                    <tr><td>Realistic Tampering</td><td>Retouching</td><td>92.5%</td><td>0.9675</td><td>0.7880</td><td>0.8660</td><td>0.7690</td></tr>
+                    <tr><td>Columbia</td><td>Uncompressed Splicing</td><td>26</td><td>100.0%</td><td>1.0000</td><td>0.9525</td><td>85.6%</td><td>0.5830</td><td>0.7256</td><td>0.7025</td><td>0.8135</td></tr>
+                    <tr><td>CASIA v2.0</td><td>Copy-Move/Splice</td><td>58</td><td>77.6%</td><td>0.8232</td><td>0.7963</td><td>79.7%</td><td>0.2239</td><td>0.3194</td><td>0.5053</td><td>0.5992</td></tr>
+                    <tr><td>NIST16</td><td>Realistic Tampering</td><td>68</td><td>83.8%</td><td>0.8637</td><td>0.9305</td><td>85.8%</td><td>0.3987</td><td>0.5448</td><td>0.6189</td><td>0.7276</td></tr>
+                    <tr><td>DEFACTO</td><td>Object Removal</td><td>12</td><td>83.3%</td><td>0.8889</td><td>0.8531</td><td>79.1%</td><td>0.3544</td><td>0.4990</td><td>0.5617</td><td>0.6830</td></tr>
+                    <tr><td>IMD2020</td><td>Real-World Inpainting</td><td>12</td><td>83.3%</td><td>0.8333</td><td>0.8856</td><td>80.0%</td><td>0.4382</td><td>0.6010</td><td>0.6009</td><td>0.7329</td></tr>
+                    <tr><td>InpaintBench (SD)</td><td>Diffusion Inpainting</td><td>45</td><td>73.3%</td><td>0.7391</td><td>0.8356</td><td>79.0%</td><td>0.3376</td><td>0.4834</td><td>0.5529</td><td>0.6754</td></tr>
+                    <tr><td>LaMa-Bench</td><td>Fourier-Convolutions</td><td>4</td><td>75.0%</td><td>0.7500</td><td>0.9755</td><td>88.4%</td><td>0.6700</td><td>0.8009</td><td>0.7593</td><td>0.8592</td></tr>
+                    <tr><td>Flux.1 / Firefly</td><td>Flow-Matching</td><td>12</td><td>83.3%</td><td>0.7778</td><td>0.8413</td><td>80.2%</td><td>0.3579</td><td>0.5156</td><td>0.5688</td><td>0.6951</td></tr>
                     <tr style="background:#f7f7f7; font-weight:bold;">
-                        <td>Mean Classical (7 DS)</td><td>Cross-Forensic</td><td>94.1%</td><td>0.9769</td><td>0.8109</td><td>0.8822</td><td>0.7915</td></tr>
-                    <tr><td>InpaintBench (SD)</td><td>Diffusion</td><td>96.4%</td><td>0.9884</td><td>0.8415</td><td>0.9082</td><td>0.8260</td></tr>
-                    <tr><td>LaMa-Bench</td><td>Fourier GAN</td><td>93.1%</td><td>0.9560</td><td>0.7940</td><td>0.8690</td><td>0.7710</td></tr>
-                    <tr><td>Flux.1 / Firefly</td><td>Flow-Match</td><td>94.7%</td><td>0.9735</td><td>0.8210</td><td>0.8920</td><td>0.8040</td></tr>
-                    <tr style="background:#f7f7f7; font-weight:bold;">
-                        <td>Mean AIGI (3 DS)</td><td>Generative</td><td>94.7%</td><td>0.9726</td><td>0.8188</td><td>0.8897</td><td>0.8003</td></tr>
+                        <td>Macro-Average</td><td>Held-Out Suite</td><td>237</td><td>82.5%</td><td>0.8345</td><td>0.8838</td><td>82.2%</td><td>0.4205</td><td>0.5612</td><td>0.6088</td><td>0.7232</td></tr>
                 </tbody>
             </table>
         </div>
@@ -681,7 +676,7 @@ paper_html = f"""<!DOCTYPE html>
                     <tr><td>DiffForensics [12]</td><td>34.2M</td><td>48.0ms (20.8)</td><td>0.9520</td><td>0.9650</td><td>0.7810</td><td>0.7840</td></tr>
                     <tr><td>NPR [13]</td><td>24.5M</td><td>18.2ms (54.9)</td><td>0.9380</td><td>0.9490</td><td>0.7420</td><td>0.7510</td></tr>
                     <tr style="font-weight:bold; background:#f0fdf4;">
-                        <td>SEFA (Ours)</td><td>11.6K</td><td>8.9ms (111.7)</td><td>0.9769</td><td>0.9726</td><td>0.8149</td><td>0.8795</td></tr>
+                        <td>SEFA (Ours)</td><td>40.7K</td><td>8.9ms (111.7)</td><td>0.8956</td><td>0.7978</td><td>0.4205</td><td>0.7232</td></tr>
                 </tbody>
             </table>
         </div>

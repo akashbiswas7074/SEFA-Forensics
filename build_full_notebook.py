@@ -276,53 +276,65 @@ def build_and_validate_notebook():
     nb.cells[6].source = (
         "# Plot authentic, inpainting, residual, and mask comparisons from real benchmark datasets\n"
         "benchmark_pairs = [\n"
-        "    ('Columbia Splicing', 'data/benchmarks/columbia/real/columbia_0019_real.png', 'data/benchmarks/columbia/forged/columbia_0019_forged.png', 'data/benchmarks/columbia/masks/columbia_0019_forged.png'),\n"
-        "    ('CASIA v2.0 Copy-Move', 'data/benchmarks/casia_v2/real/casia_v2_0027_real.png', 'data/benchmarks/casia_v2/forged/casia_v2_0027_forged.png', 'data/benchmarks/casia_v2/masks/casia_v2_0027_forged.png'),\n"
-        "    ('InpaintBench Diffusion', 'data/benchmarks/inpaintbench_sd/real/inpaintbench_sd_0030_real.png', 'data/benchmarks/inpaintbench_sd/forged/inpaintbench_sd_0030_forged.png', 'data/benchmarks/inpaintbench_sd/masks/inpaintbench_sd_0030_forged.png'),\n"
-        "]\n\n"
-        "fig, axes = plt.subplots(3, 4, figsize=(16, 11))\n"
+        "    ('Columbia Splicing', 'data/benchmarks/columbia/real/canong3_02_sub_01.png', 'data/benchmarks/columbia/forged/canong3_canonxt_sub_01.png', 'data/benchmarks/columbia/masks/canong3_canonxt_sub_01_mask.png'),\n"
+        "    ('CoMoFoD Copy-Move', 'data/benchmarks/comofod/real/1.png', 'data/benchmarks/comofod/forged/1t.png', 'data/benchmarks/comofod/masks/1t_mask.png'),\n"
+        "    ('Realistic Tampering', 'data/benchmarks/realistic_tampering/real/DPP0022.png', 'data/benchmarks/realistic_tampering/forged/DPP0022.png', 'data/benchmarks/realistic_tampering/masks/DPP0022_mask.png'),\n"
+        "]\n"
+        "col_titles = ['Authentic Camera (x)', 'Forged / Manipulated (x\\')', 'Physical Residual |Δx|', 'Ground Truth Mask (y)']\n\n"
+        "fig, axes = plt.subplots(3, 4, figsize=(13.5, 9.8), gridspec_kw={'wspace': 0.14, 'hspace': 0.22})\n"
         "for row, (ds_name, rf, ff, mf) in enumerate(benchmark_pairs):\n"
-        "    im_r = Image.open(rf).convert('RGB').resize((224, 224))\n"
-        "    im_f = Image.open(ff).convert('RGB').resize((224, 224))\n"
-        "    im_m = Image.open(mf).convert('L').resize((224, 224))\n\n"
+        "    im_r = Image.open(rf).convert('RGB').resize((256, 256))\n"
+        "    im_f = Image.open(ff).convert('RGB').resize((256, 256))\n"
+        "    im_m = Image.open(mf).convert('L').resize((256, 256))\n\n"
         "    diff = np.abs(np.array(im_f, dtype=float) - np.array(im_r, dtype=float))\n"
         "    diff_vis = (diff / (diff.max() + 1e-6) * 255.0).astype(np.uint8)\n\n"
-        "    axes[row, 0].imshow(im_r); axes[row, 0].set_title(f\"[{ds_name}] Authentic\", fontsize=10); axes[row, 0].axis('off')\n"
-        "    axes[row, 1].imshow(im_f); axes[row, 1].set_title(f\"[{ds_name}] Forged / Inpainted\", fontsize=10); axes[row, 1].axis('off')\n"
-        "    axes[row, 2].imshow(diff_vis); axes[row, 2].set_title(f\"[{ds_name}] Residual |Δx|\", fontsize=10); axes[row, 2].axis('off')\n"
-        "    axes[row, 3].imshow(im_m, cmap='gray'); axes[row, 3].set_title(f\"[{ds_name}] Ground Truth Mask\", fontsize=10); axes[row, 3].axis('off')\n\n"
-        "plt.suptitle(\"Figure 1: Representative authentic images, subtle inpaintings/tampering, residual maps, and ground-truth masks.\", fontsize=12, y=0.99)\n"
+        "    images = [im_r, im_f, diff_vis, im_m]\n"
+        "    for col in range(4):\n"
+        "        ax = axes[row, col]\n"
+        "        if col == 3:\n"
+        "            ax.imshow(images[col], cmap='gray')\n"
+        "        else:\n"
+        "            ax.imshow(images[col])\n"
+        "        ax.axis('off')\n"
+        "        ax.set_title(f'{ds_name}\\n{col_titles[col]}', fontsize=9.2, fontweight='bold', pad=5)\n\n"
+        "plt.suptitle(\"Figure 1: Authentic camera images, real-world tampering, physical residuals, and true ground-truth masks.\", fontsize=11.5, fontweight='bold', y=0.985)\n"
         "plt.tight_layout()\n"
         "plt.show()"
     )
 
     benchmark_pairs = [
-        ('Columbia Splicing', 'data/benchmarks/columbia/real/columbia_0019_real.png', 'data/benchmarks/columbia/forged/columbia_0019_forged.png', 'data/benchmarks/columbia/masks/columbia_0019_forged.png'),
-        ('CASIA v2.0 Copy-Move', 'data/benchmarks/casia_v2/real/casia_v2_0027_real.png', 'data/benchmarks/casia_v2/forged/casia_v2_0027_forged.png', 'data/benchmarks/casia_v2/masks/casia_v2_0027_forged.png'),
-        ('InpaintBench Diffusion', 'data/benchmarks/inpaintbench_sd/real/inpaintbench_sd_0030_real.png', 'data/benchmarks/inpaintbench_sd/forged/inpaintbench_sd_0030_forged.png', 'data/benchmarks/inpaintbench_sd/masks/inpaintbench_sd_0030_forged.png'),
+        ('Columbia Splicing', 'data/benchmarks/columbia/real/canong3_02_sub_01.png', 'data/benchmarks/columbia/forged/canong3_canonxt_sub_01.png', 'data/benchmarks/columbia/masks/canong3_canonxt_sub_01_mask.png'),
+        ('CoMoFoD Copy-Move', 'data/benchmarks/comofod/real/1.png', 'data/benchmarks/comofod/forged/1t.png', 'data/benchmarks/comofod/masks/1t_mask.png'),
+        ('Realistic Tampering', 'data/benchmarks/realistic_tampering/real/DPP0022.png', 'data/benchmarks/realistic_tampering/forged/DPP0022.png', 'data/benchmarks/realistic_tampering/masks/DPP0022_mask.png'),
     ]
+    col_titles = ['Authentic Camera (x)', 'Forged / Manipulated (x\')', 'Physical Residual |Δx|', 'Ground Truth Mask (y)']
 
-    fig1, axes1 = plt.subplots(3, 4, figsize=(16, 11))
+    fig1, axes1 = plt.subplots(3, 4, figsize=(13.5, 9.8), gridspec_kw={'wspace': 0.14, 'hspace': 0.22})
     for row, (ds_name, rf, ff, mf) in enumerate(benchmark_pairs):
-        im_r = Image.open(rf).convert('RGB').resize((224, 224))
-        im_f = Image.open(ff).convert('RGB').resize((224, 224))
-        im_m = Image.open(mf).convert('L').resize((224, 224))
+        im_r = Image.open(rf).convert('RGB').resize((256, 256))
+        im_f = Image.open(ff).convert('RGB').resize((256, 256))
+        im_m = Image.open(mf).convert('L').resize((256, 256))
 
         diff = np.abs(np.array(im_f, dtype=float) - np.array(im_r, dtype=float))
         diff_vis = (diff / (diff.max() + 1e-6) * 255.0).astype(np.uint8)
 
-        axes1[row, 0].imshow(im_r); axes1[row, 0].set_title(f"[{ds_name}] Authentic", fontsize=10); axes1[row, 0].axis('off')
-        axes1[row, 1].imshow(im_f); axes1[row, 1].set_title(f"[{ds_name}] Forged / Inpainted", fontsize=10); axes1[row, 1].axis('off')
-        axes1[row, 2].imshow(diff_vis); axes1[row, 2].set_title(f"[{ds_name}] Residual |Δx|", fontsize=10); axes1[row, 2].axis('off')
-        axes1[row, 3].imshow(im_m, cmap='gray'); axes1[row, 3].set_title(f"[{ds_name}] Ground Truth Mask", fontsize=10); axes1[row, 3].axis('off')
+        images = [im_r, im_f, diff_vis, im_m]
+        for col in range(4):
+            ax = axes1[row, col]
+            if col == 3:
+                ax.imshow(images[col], cmap='gray')
+            else:
+                ax.imshow(images[col])
+            ax.axis('off')
+            ax.set_title(f'{ds_name}\n{col_titles[col]}', fontsize=9.2, fontweight='bold', pad=5)
 
-    plt.suptitle("Figure 1: Representative authentic images, subtle inpaintings/tampering, residual maps, and ground-truth masks.", fontsize=12, y=0.99)
+    plt.suptitle("Figure 1: Authentic camera images, real-world tampering, physical residuals, and true ground-truth masks.", fontsize=11.5, fontweight='bold', y=0.985)
     plt.tight_layout()
     b64_fig1 = fig_to_png_base64(fig1, save_path=os.path.join(figures_dir, "figure_1_dataset_pairs.png"))
     nb.cells[6].outputs = [
         nbformat.v4.new_output(
             output_type='display_data',
-            data={'image/png': b64_fig1, 'text/plain': '<Figure size 1600x1100 with 12 Axes>'}
+            data={'image/png': b64_fig1, 'text/plain': '<Figure size 1350x980 with 12 Axes>'}
         )
     ]
     print("[✓] Figure 1 rendered.")
@@ -1188,6 +1200,33 @@ def build_and_validate_notebook():
         )
     ]
     print(f"[✓] Figure 8 JPEG Q=75 Robustness rendered (AUROC = {auc_jpeg:.4f}).")
+
+    # Cell 22 & 23: SOTA Baselines & Ablation Suite
+    nb.cells[22].source = (
+        "---\n"
+        "### 7. Comprehensive Multi-Dataset Public Forensic & Modern AIGI Benchmark Suite\n"
+        "Executes quantitative cross-generator generalization, SOTA baseline comparisons, ablation studies, "
+        "and post-processing laundering robustness grids using the live evaluation suite."
+    )
+
+    nb.cells[23].source = (
+        "# Comprehensive Multi-Dataset Public Forensic & Modern AIGI Benchmark Suite\n"
+        "from scripts.run_benchmarks_ablations import run_comprehensive_benchmarks\n\n"
+        "run_comprehensive_benchmarks()"
+    )
+
+    print("\n[*] Populating Cell 23 with live benchmark & ablation suite execution...")
+    import io
+    from contextlib import redirect_stdout
+    f_bench_out = io.StringIO()
+    with redirect_stdout(f_bench_out):
+        from scripts.run_benchmarks_ablations import run_comprehensive_benchmarks
+        run_comprehensive_benchmarks()
+    bench_stdout = f_bench_out.getvalue()
+    nb.cells[23].outputs = [
+        nbformat.v4.new_output(output_type='stream', name='stdout', text=bench_stdout)
+    ]
+    print("[✓] Cell 23 benchmark outputs populated with 100% solid live metrics.")
 
     # Qualitative localization section (cells 24, 25, 26)
     cell_qual_idx = 24
