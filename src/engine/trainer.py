@@ -22,8 +22,6 @@ class DiceLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        # pred: [K, 1, H, W] in [0, 1]
-        # target: [K, 1, H, W] in [0, 1]
         K = pred.shape[0]
         if K == 0:
             return torch.tensor(0.0, device=pred.device)
@@ -33,6 +31,34 @@ class DiceLoss(nn.Module):
         cardinality = pred_flat.sum(dim=1) + target_flat.sum(dim=1)
         dice = (2.0 * intersection + self.smooth) / (cardinality + self.smooth)
         return (1.0 - dice).mean()
+
+
+class FocalTverskyLoss(nn.Module):
+    """
+    Focal Tversky Loss for highly imbalanced spatial manipulation localization.
+    alpha=0.7 heavily penalizes false-positive background noise (which occupies ~86% of pixels).
+    beta=0.3 handles sparse forged regions (~14% of pixels).
+    gamma=1.33 focuses gradient on hard boundary and edge ambiguities.
+    """
+    def __init__(self, alpha: float = 0.7, beta: float = 0.3, gamma: float = 1.33, smooth: float = 1e-5):
+        super().__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.smooth = smooth
+
+    def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        K = pred.shape[0]
+        if K == 0:
+            return torch.tensor(0.0, device=pred.device)
+        pred_flat = pred.view(K, -1)
+        target_flat = target.view(K, -1)
+        tp = (pred_flat * target_flat).sum(dim=1)
+        fp = (pred_flat * (1.0 - target_flat)).sum(dim=1)
+        fn = ((1.0 - pred_flat) * target_flat).sum(dim=1)
+        tversky = (tp + self.smooth) / (tp + self.alpha * fp + self.beta * fn + self.smooth)
+        focal_tversky = torch.pow(torch.clamp(1.0 - tversky, min=0.0), 1.0 / self.gamma)
+        return focal_tversky.mean()
 
 
 class SEFATrainer:
@@ -46,7 +72,7 @@ class SEFATrainer:
         lr: float = 1e-3,
         weight_decay: float = 1e-4,
         bce_weight: float = 1.0,
-        dice_weight: float = 0.5,
+        dice_weight: float = 1.0,
         checkpoint_dir: str = "checkpoints",
     ):
         self.model = model
@@ -61,7 +87,7 @@ class SEFATrainer:
         # Train ONLY router and learnable aggregation weights
         trainable_params = [p for p in self.model.parameters() if p.requires_grad]
         self.optimizer = torch.optim.AdamW(trainable_params, lr=lr, weight_decay=weight_decay)
-        self.dice_loss_fn = DiceLoss()
+        self.dice_loss_fn = FocalTverskyLoss(alpha=0.7, beta=0.3, gamma=1.33)
         self.bce_img_fn = nn.BCEWithLogitsLoss()
 
     def train_epoch(self, dataloader: DataLoader) -> Dict[str, float]:
@@ -107,7 +133,7 @@ class SEFATrainer:
             else:
                 loss_clean = torch.tensor(0.0, device=self.device)
 
-            loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.2 * loss_clean
+            loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.4 * loss_clean
 
             # Total composite loss
             loss = self.bce_weight * loss_img + self.dice_weight * loss_loc
@@ -161,7 +187,7 @@ class SEFATrainer:
             else:
                 loss_clean = torch.tensor(0.0, device=self.device)
 
-            loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.2 * loss_clean
+            loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.4 * loss_clean
             loss = self.bce_weight * loss_img + self.dice_weight * loss_loc
             total_loss += loss.item()
             probs = torch.sigmoid(img_logits)
@@ -191,6 +217,46 @@ class SEFATrainer:
             f1 = (2 * tp + 1e-6) / (2 * tp + fp + fn + 1e-6)
             if f1 > best_f1:
                 best_f1 = f1
+                best_tau = tau
+        return float(best_tau)
+
+    @torch.no_grad()
+    def calibrate_localization_threshold(self, val_loader: DataLoader, metric: str = "iou") -> float:
+        """
+        Calibrates optimal localization threshold tau_loc* on validation set
+        to maximize mIoU or Dice score against foreground/background pixel imbalance.
+        """
+        self.model.eval()
+        preds, targets = [], []
+        for batch in val_loader:
+            imgs = batch["image"].to(self.device)
+            lbls = batch["label"].to(self.device)
+            msks = batch["mask"].to(self.device)
+            _, pred_masks, _ = self.model(imgs)
+            is_f = (lbls == 1.0)
+            if is_f.any():
+                preds.extend(pred_masks[is_f].squeeze(1).cpu().numpy())
+                targets.extend(msks[is_f].squeeze(1).cpu().numpy())
+
+        if len(preds) == 0:
+            return 0.5
+
+        best_score, best_tau = 0.0, 0.50
+        for tau in np.linspace(0.20, 0.85, 66):
+            scores = []
+            for p, g in zip(preds, targets):
+                if g.sum() > 0:
+                    pb = (p >= tau).astype(float)
+                    inter = (pb * g).sum()
+                    if metric == "dice":
+                        score = (2.0 * inter + 1e-6) / (pb.sum() + g.sum() + 1e-6)
+                    else:
+                        union = pb.sum() + g.sum() - inter
+                        score = (inter + 1e-6) / (union + 1e-6)
+                    scores.append(score)
+            mean_s = np.mean(scores) if len(scores) > 0 else 0.0
+            if mean_s > best_score:
+                best_score = mean_s
                 best_tau = tau
         return float(best_tau)
 
@@ -294,7 +360,7 @@ class SEFATrainer:
                     else:
                         loss_clean = torch.tensor(0.0, device=self.device)
 
-                    loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.2 * loss_clean
+                    loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.4 * loss_clean
                     loss = self.bce_weight * loss_img + self.dice_weight * loss_loc
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_([p for p in self.model.parameters() if p.requires_grad], max_norm=1.0)

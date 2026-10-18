@@ -597,41 +597,21 @@ def build_and_validate_notebook():
         lr=1.0e-3,
         weight_decay=1.0e-3,
         bce_weight=1.0,
-        dice_weight=0.5,
+        dice_weight=1.0,
         checkpoint_dir=os.path.join(proj_root, "checkpoints")
     )
-    ckpt_path = os.path.join(proj_root, "checkpoints", "sefa_best.pth")
-    if os.path.exists(ckpt_path):
-        model.load_state_dict(torch.load(ckpt_path, map_location=device))
-        print(f"[✓] Loaded verified SEFA checkpoint from {ckpt_path}.")
-    else:
-        t_train_start = time.time()
-        history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=12, verbose=True, cache_backbone=True)
-        t_train_end = time.time()
-        print(f"[✓] Live Training complete in {t_train_end - t_train_start:.1f}s.")
-
-    converged_history = [
-        {"epoch": 1, "loss": 0.5412, "loss_img": 0.2640, "loss_loc": 0.5544, "val_loss": 0.4820, "val_acc": 0.842},
-        {"epoch": 2, "loss": 0.4628, "loss_img": 0.2185, "loss_loc": 0.4886, "val_loss": 0.4180, "val_acc": 0.871},
-        {"epoch": 3, "loss": 0.4015, "loss_img": 0.1824, "loss_loc": 0.4382, "val_loss": 0.3695, "val_acc": 0.894},
-        {"epoch": 4, "loss": 0.3520, "loss_img": 0.1542, "loss_loc": 0.3956, "val_loss": 0.3288, "val_acc": 0.912},
-        {"epoch": 5, "loss": 0.3114, "loss_img": 0.1320, "loss_loc": 0.3588, "val_loss": 0.2982, "val_acc": 0.923},
-        {"epoch": 6, "loss": 0.2795, "loss_img": 0.1154, "loss_loc": 0.3282, "val_loss": 0.2745, "val_acc": 0.930},
-        {"epoch": 7, "loss": 0.2541, "loss_img": 0.1022, "loss_loc": 0.3038, "val_loss": 0.2562, "val_acc": 0.935},
-        {"epoch": 8, "loss": 0.2346, "loss_img": 0.0924, "loss_loc": 0.2844, "val_loss": 0.2424, "val_acc": 0.939},
-        {"epoch": 9, "loss": 0.2198, "loss_img": 0.0848, "loss_loc": 0.2700, "val_loss": 0.2320, "val_acc": 0.941},
-        {"epoch": 10, "loss": 0.2085, "loss_img": 0.0792, "loss_loc": 0.2586, "val_loss": 0.2245, "val_acc": 0.943},
-        {"epoch": 11, "loss": 0.2012, "loss_img": 0.0754, "loss_loc": 0.2516, "val_loss": 0.2201, "val_acc": 0.945},
-        {"epoch": 12, "loss": 0.1980, "loss_img": 0.0738, "loss_loc": 0.2484, "val_loss": 0.2185, "val_acc": 0.946},
-    ]
+    t_train_start = time.time()
+    history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=12, verbose=True, cache_backbone=True)
+    t_train_end = time.time()
+    print(f"[✓] Live Training complete in {t_train_end - t_train_start:.1f}s.")
 
     out_cell14_lines = [
-        f"Training SEFA router (12 epochs, batch size 16)...",
+        f"Training SEFA router ({len(history)} epochs, batch size 16)...",
         f"Trainable parameters: {trainable_params:,} ({(trainable_params/total_params)*100:.4f}% of total model)"
     ]
-    for h in converged_history:
+    for ep_idx, h in enumerate(history, 1):
         out_cell14_lines.append(
-            f"Epoch {h['epoch']:02d}/12 | Train Loss: {h['loss']:.4f} (Img: {h['loss_img']:.4f}, Loc: {h['loss_loc']:.4f}) | Val Loss: {h['val_loss']:.4f}, Acc: {h['val_acc']*100:.1f}%"
+            f"Epoch {ep_idx:02d}/{len(history):02d} | Train Loss: {h['loss']:.4f} (Img: {h['loss_img']:.4f}, Loc: {h['loss_loc']:.4f}) | Val Loss: {h.get('val_loss', 0.0):.4f}, Acc: {h.get('val_acc', 0.0)*100:.1f}%"
         )
     out_cell14_lines.append("Training complete. Checkpoint saved to checkpoints/sefa_best.pth.\n")
     nb.cells[14].outputs = [
@@ -655,22 +635,22 @@ def build_and_validate_notebook():
         "axes[0].legend(frameon=True)\n"
         "axes[0].grid(True, linestyle='--', alpha=0.4)\n\n"
         "axes[1].plot(epochs, img_losses, 'd-', color='#f59e0b', linewidth=2, label='Image BCE Loss')\n"
-        "axes[1].plot(epochs, loc_losses, '^-', color='#8b5cf6', linewidth=2, label='Localization Loss (Dice + BCE)')\n"
+        "axes[1].plot(epochs, loc_losses, '^-', color='#8b5cf6', linewidth=2, label='Localization Loss (Focal Tversky + BCE)')\n"
         "axes[1].set_xlabel('Epoch', fontsize=10)\n"
         "axes[1].set_ylabel('Component Loss', fontsize=10)\n"
         "axes[1].set_title('Classification and localization loss components', fontsize=11)\n"
         "axes[1].legend(frameon=True)\n"
         "axes[1].grid(True, linestyle='--', alpha=0.4)\n\n"
-        "plt.suptitle(\"Figure 5: Training dynamics on authentic multi-dataset suite (RTX 3050 Ti GPU).\", fontsize=12, y=1.02)\n"
+        "plt.suptitle(\"Figure 5: Training dynamics on authentic multi-dataset suite.\", fontsize=12, y=1.02)\n"
         "plt.tight_layout()\n"
         "plt.show()"
     )
 
-    ep_range = range(1, len(converged_history) + 1)
-    train_losses = [h['loss'] for h in converged_history]
-    val_losses = [h['val_loss'] for h in converged_history]
-    img_losses = [h['loss_img'] for h in converged_history]
-    loc_losses = [h['loss_loc'] for h in converged_history]
+    ep_range = range(1, len(history) + 1)
+    train_losses = [h['loss'] for h in history]
+    val_losses = [h['val_loss'] for h in history]
+    img_losses = [h['loss_img'] for h in history]
+    loc_losses = [h['loss_loc'] for h in history]
 
     fig5, axes5 = plt.subplots(1, 2, figsize=(14, 4.5))
     axes5[0].plot(ep_range, train_losses, 'o-', color='#2563eb', linewidth=2, label='Train Loss')
@@ -745,6 +725,31 @@ def build_and_validate_notebook():
 
     all_y_pred = (all_y_scores >= opt_tau).astype(int)
 
+    # Determine calibrated pixel localization threshold tau_loc* based on validation set
+    val_preds_m, val_gt_m = [], []
+    with torch.no_grad():
+        for batch in val_loader:
+            imgs = batch['image'].to(device)
+            lbls = batch['label'].numpy()
+            msks = batch['mask'].numpy()
+            _, p_m, _ = model(imgs)
+            for k in range(len(lbls)):
+                if lbls[k] == 1 and msks[k].sum() > 0:
+                    val_preds_m.append(p_m[k, 0].cpu().numpy())
+                    val_gt_m.append(msks[k, 0])
+
+    best_v_miou, opt_tau_loc = 0.0, 0.35
+    for t_c in np.linspace(0.20, 0.65, 46):
+        v_ious = []
+        for p, g in zip(val_preds_m, val_gt_m):
+            pb = (p >= t_c).astype(float)
+            inter = (pb * g).sum()
+            union = pb.sum() + g.sum() - inter
+            v_ious.append((inter + 1e-6) / (union + 1e-6))
+        if len(v_ious) > 0 and np.mean(v_ious) > best_v_miou:
+            best_v_miou = float(np.mean(v_ious))
+            opt_tau_loc = float(t_c)
+
     nb.cells[17].source = (
         "# Evaluate model on held-out zero-leakage test set across public benchmarks\n"
         "model.eval()\n"
@@ -769,14 +774,15 @@ def build_and_validate_notebook():
         "all_y_true = np.array(all_y_true).astype(int)\n"
         "all_y_scores = np.array(all_y_scores)\n"
         f"opt_tau = {opt_tau:.3f}\n"
+        f"opt_tau_loc = {opt_tau_loc:.3f}\n"
         "all_y_pred = (all_y_scores >= opt_tau).astype(int)\n"
-        f"print(f\"Evaluated {{len(all_y_true)}} held-out test samples across public benchmarks (calibrated tau* = {{opt_tau:.3f}}).\")"
+        f"print(f\"Evaluated {{len(all_y_true)}} held-out test samples across public benchmarks (calibrated tau* = {{opt_tau:.3f}}, tau_loc* = {{opt_tau_loc:.3f}}).\")"
     )
 
     nb.cells[17].outputs = [
         nbformat.v4.new_output(
             output_type='stream', name='stdout',
-            text=f"Evaluated {len(all_y_true)} held-out test samples across public benchmarks (calibrated tau* = {opt_tau:.3f}).\n"
+            text=f"Evaluated {len(all_y_true)} held-out test samples across public benchmarks (calibrated tau* = {opt_tau:.3f}, tau_loc* = {opt_tau_loc:.3f}).\n"
         )
     ]
 
@@ -854,29 +860,36 @@ def build_and_validate_notebook():
         f"print(f\"Classification Report (Held-out Multi-Dataset Test Split, calibrated tau*={{opt_tau:.3f}}):\")\n"
         "print(report_str)\n\n"
         "# Calculate Pixel-Level Localization Metrics dynamically on held-out manipulated samples\n"
-        "ious, dices, pixel_aurocs = [], [], []\n"
+        "ious_calib, dices_calib, pixel_aurocs = [], [], []\n"
+        "ious_fixed, dices_fixed = [], []\n"
         "for p, g, l in zip(all_pred_masks, all_gt_masks, all_y_true):\n"
         "    if l == 1 and g.sum() > 0:\n"
         "        # Pixel-level AUROC: threshold-independent continuous discriminability\n"
         "        if g.sum() < g.size:\n"
         "            pixel_aurocs.append(roc_auc_score(g.flatten(), p.flatten()))\n"
-        "        # Binary localization at calibrated threshold tau=0.35\n"
-        "        pb = (p >= 0.35).astype(float)\n"
-        "        inter = (pb * g).sum()\n"
-        "        union = pb.sum() + g.sum() - inter\n"
-        "        ious.append((inter + 1e-6) / (union + 1e-6))\n"
-        "        dices.append((2 * inter + 1e-6) / (pb.sum() + g.sum() + 1e-6))\n\n"
+        "        # Calibrated localization threshold\n"
+        "        pb_c = (p >= opt_tau_loc).astype(float)\n"
+        "        inter_c = (pb_c * g).sum()\n"
+        "        union_c = pb_c.sum() + g.sum() - inter_c\n"
+        "        ious_calib.append((inter_c + 1e-6) / (union_c + 1e-6))\n"
+        "        dices_calib.append((2 * inter_c + 1e-6) / (pb_c.sum() + g.sum() + 1e-6))\n"
+        "        # Standard baseline threshold tau=0.35\n"
+        "        pb_f = (p >= 0.35).astype(float)\n"
+        "        inter_f = (pb_f * g).sum()\n"
+        "        union_f = pb_f.sum() + g.sum() - inter_f\n"
+        "        ious_fixed.append((inter_f + 1e-6) / (union_f + 1e-6))\n"
+        "        dices_fixed.append((2 * inter_f + 1e-6) / (pb_f.sum() + g.sum() + 1e-6))\n\n"
         "mean_pixel_auroc = float(np.mean(pixel_aurocs)) if len(pixel_aurocs) > 0 else 0.0\n"
-        "mean_iou = float(np.mean(ious)) if len(ious) > 0 else 0.0\n"
-        "mean_dice = float(np.mean(dices)) if len(dices) > 0 else 0.0\n"
-        "pixel_f1 = mean_dice\n"
-        "boundary_f1 = float(np.mean(ious) * 0.95) if len(ious) > 0 else 0.0\n\n"
+        "mean_iou_c = float(np.mean(ious_calib)) if len(ious_calib) > 0 else 0.0\n"
+        "mean_dice_c = float(np.mean(dices_calib)) if len(dices_calib) > 0 else 0.0\n"
+        "mean_iou_f = float(np.mean(ious_fixed)) if len(ious_fixed) > 0 else 0.0\n"
+        "mean_dice_f = float(np.mean(dices_fixed)) if len(dices_fixed) > 0 else 0.0\n\n"
         "print(\"Localization Metrics (Held-out Manipulated Images):\")\n"
-        "print(f\"  Pixel-Level AUROC: {mean_pixel_auroc:.4f}  (Threshold-independent pixel discriminability)\")\n"
-        "print(f\"  Mean IoU:          {mean_iou:.4f}  (Fixed tau=0.35 on sparse ~14% foreground area)\")\n"
-        "print(f\"  Mean Dice:         {mean_dice:.4f}\")\n"
-        "print(f\"  Pixel-F1:          {pixel_f1:.4f}\")\n"
-        "print(f\"  Boundary-F1:       {boundary_f1:.4f}\")\n\n"
+        "print(f\"  Pixel-Level AUROC:            {mean_pixel_auroc:.4f}  (Threshold-independent pixel discriminability)\")\n"
+        f"print(f\"  Calibrated mIoU (tau*={opt_tau_loc:.3f}): {{mean_iou_c:.4f}}\")\n"
+        f"print(f\"  Calibrated Dice (tau*={opt_tau_loc:.3f}): {{mean_dice_c:.4f}}\")\n"
+        "print(f\"  Baseline mIoU   (tau=0.35):   {mean_iou_f:.4f}  (Fixed reference threshold)\")\n"
+        "print(f\"  Baseline Dice   (tau=0.35):   {mean_dice_f:.4f}\")\n\n"
         "# Multi-Benchmark Public Evaluation Breakdown (Dynamically Computed via Loop)\n"
         "benchmark_suites = [\n"
         "    ('Columbia', 'Uncompressed Splicing', 'columbia'),\n"
@@ -906,7 +919,7 @@ def build_and_validate_notebook():
         "    sub_ious, sub_dices = [], []\n"
         "    for idx in idxs:\n"
         "        if all_y_true[idx] == 1 and all_gt_masks[idx].sum() > 0:\n"
-        "            pb = (all_pred_masks[idx] >= 0.35).astype(float)\n"
+        "            pb = (all_pred_masks[idx] >= opt_tau_loc).astype(float)\n"
         "            inter = (pb * all_gt_masks[idx]).sum()\n"
         "            union = pb.sum() + all_gt_masks[idx].sum() - inter\n"
         "            sub_ious.append((inter + 1e-6) / (union + 1e-6))\n"
@@ -931,24 +944,29 @@ def build_and_validate_notebook():
         "print('=' * 98)"
     )
 
-    ious, dices, pixel_aurocs = [], [], []
+    ious_calib, dices_calib, pixel_aurocs = [], [], []
+    ious_fixed, dices_fixed = [], []
     for p, g, l in zip(all_pred_masks, all_gt_masks, all_y_true):
         if l == 1 and g.sum() > 0:
             if g.sum() < g.size:
                 pixel_aurocs.append(roc_auc_score(g.flatten(), p.flatten()))
-            pb = (p >= 0.35).astype(float)
-            inter = (pb * g).sum()
-            union = pb.sum() + g.sum() - inter
-            iou = (inter + 1e-6) / (union + 1e-6)
-            dice = (2 * inter + 1e-6) / (pb.sum() + g.sum() + 1e-6)
-            ious.append(iou)
-            dices.append(dice)
+            pb_c = (p >= opt_tau_loc).astype(float)
+            inter_c = (pb_c * g).sum()
+            union_c = pb_c.sum() + g.sum() - inter_c
+            ious_calib.append((inter_c + 1e-6) / (union_c + 1e-6))
+            dices_calib.append((2 * inter_c + 1e-6) / (pb_c.sum() + g.sum() + 1e-6))
+
+            pb_f = (p >= 0.35).astype(float)
+            inter_f = (pb_f * g).sum()
+            union_f = pb_f.sum() + g.sum() - inter_f
+            ious_fixed.append((inter_f + 1e-6) / (union_f + 1e-6))
+            dices_fixed.append((2 * inter_f + 1e-6) / (pb_f.sum() + g.sum() + 1e-6))
 
     mean_pixel_auroc = float(np.mean(pixel_aurocs)) if len(pixel_aurocs) > 0 else 0.0
-    mean_iou = float(np.mean(ious)) if len(ious) > 0 else 0.0
-    mean_dice = float(np.mean(dices)) if len(dices) > 0 else 0.0
-    pixel_f1 = mean_dice
-    boundary_f1 = float(np.mean(ious) * 0.95) if len(ious) > 0 else 0.0
+    mean_iou_c = float(np.mean(ious_calib)) if len(ious_calib) > 0 else 0.0
+    mean_dice_c = float(np.mean(dices_calib)) if len(dices_calib) > 0 else 0.0
+    mean_iou_f = float(np.mean(ious_fixed)) if len(ious_fixed) > 0 else 0.0
+    mean_dice_f = float(np.mean(dices_fixed)) if len(dices_fixed) > 0 else 0.0
 
     rep_str = classification_report(
         all_y_true, all_y_pred, target_names=['Authentic', 'Manipulated'], digits=4
@@ -972,7 +990,7 @@ def build_and_validate_notebook():
         sub_ious, sub_dices = [], []
         for idx in idxs:
             if all_y_true[idx] == 1 and all_gt_masks[idx].sum() > 0:
-                pb = (all_pred_masks[idx] >= 0.35).astype(float)
+                pb = (all_pred_masks[idx] >= opt_tau_loc).astype(float)
                 inter = (pb * all_gt_masks[idx]).sum()
                 union = pb.sum() + all_gt_masks[idx].sum() - inter
                 sub_ious.append((inter + 1e-6) / (union + 1e-6))
@@ -1007,11 +1025,11 @@ def build_and_validate_notebook():
         f"Classification Report (Held-out Multi-Dataset Test Split, calibrated tau*={opt_tau:.3f}):\n"
         f"{rep_str}\n"
         f"Localization Metrics (Held-out Manipulated Images):\n"
-        f"  Pixel-Level AUROC: {mean_pixel_auroc:.4f}  (Threshold-independent pixel discriminability)\n"
-        f"  Mean IoU:          {mean_iou:.4f}  (Fixed tau=0.35 on sparse ~14% foreground area)\n"
-        f"  Mean Dice:         {mean_dice:.4f}\n"
-        f"  Pixel-F1:          {pixel_f1:.4f}\n"
-        f"  Boundary-F1:       {boundary_f1:.4f}\n"
+        f"  Pixel-Level AUROC:            {mean_pixel_auroc:.4f}  (Threshold-independent pixel discriminability)\n"
+        f"  Calibrated mIoU (tau*={opt_tau_loc:.3f}): {mean_iou_c:.4f}\n"
+        f"  Calibrated Dice (tau*={opt_tau_loc:.3f}): {mean_dice_c:.4f}\n"
+        f"  Baseline mIoU   (tau=0.35):   {mean_iou_f:.4f}  (Fixed reference threshold)\n"
+        f"  Baseline Dice   (tau=0.35):   {mean_dice_f:.4f}\n"
         f"{bench_table_str}\n"
     )
     nb.cells[19].outputs = [
