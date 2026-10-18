@@ -483,17 +483,25 @@ paper_html = f"""<!DOCTYPE html>
         font-style: italic;
         font-size: 8.5pt;
     }}
+    .table-container {{
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin: 7px 0;
+        display: block;
+    }}
     table {{
         width: 100%;
         border-collapse: collapse;
-        font-size: 7.2pt;
-        margin: 6px 0;
-        line-height: 1.2;
+        font-size: 7.0pt;
+        margin: 2px 0 4px 0;
+        line-height: 1.18;
+        break-inside: avoid;
+        page-break-inside: avoid;
     }}
     th, td {{
         border-top: 0.5pt solid #888;
         border-bottom: 0.5pt solid #888;
-        padding: 2.5px 3px;
+        padding: 2.2px 2.5px;
         text-align: center;
     }}
     th {{
@@ -506,17 +514,20 @@ paper_html = f"""<!DOCTYPE html>
         text-align: left;
     }}
     .table-caption {{
-        font-size: 7.5pt;
+        font-size: 7.4pt;
         font-weight: bold;
         text-align: center;
-        margin-top: 5px;
+        margin-top: 4px;
         margin-bottom: 2px;
         text-transform: uppercase;
         letter-spacing: 0.3px;
+        break-after: avoid;
+        page-break-after: avoid;
     }}
     .fig-box {{
         margin: 6px 0;
         text-align: center;
+        break-inside: avoid;
         page-break-inside: avoid;
     }}
     .fig-img {{
@@ -615,91 +626,95 @@ paper_html = f"""<!DOCTYPE html>
 
         <h2>III. Experimental Results</h2>
 
-        <div class="table-caption">TABLE I: Public & Modern AIGI Benchmark Evaluation</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Benchmark Dataset</th>
-                    <th>Category</th>
-                    <th>Acc</th>
-                    <th>AUROC</th>
-                    <th>mIoU</th>
-                    <th>Dice</th>
-                    <th>Bnd-F1</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>CASIA v2.0</td><td>Splicing/Copy</td><td>94.8%</td><td>0.9814</td><td>0.8140</td><td>0.8860</td><td>0.7925</td></tr>
-                <tr><td>Columbia</td><td>Splicing</td><td>97.0%</td><td>0.9920</td><td>0.8620</td><td>0.9185</td><td>0.8410</td></tr>
-                <tr><td>IMD2020</td><td>Inpainting</td><td>93.4%</td><td>0.9745</td><td>0.7960</td><td>0.8710</td><td>0.7780</td></tr>
-                <tr><td>NIST16</td><td>Tampering</td><td>91.8%</td><td>0.9610</td><td>0.7750</td><td>0.8540</td><td>0.7560</td></tr>
-                <tr><td>CoMoFoD</td><td>Copy-Move</td><td>95.2%</td><td>0.9840</td><td>0.8320</td><td>0.8990</td><td>0.8150</td></tr>
-                <tr><td>DEFACTO</td><td>Removal/Splice</td><td>94.1%</td><td>0.9780</td><td>0.8090</td><td>0.8810</td><td>0.7890</td></tr>
-                <tr><td>Realistic Tampering</td><td>Retouching</td><td>92.5%</td><td>0.9675</td><td>0.7880</td><td>0.8660</td><td>0.7690</td></tr>
-                <tr style="background:#f7f7f7; font-weight:bold;">
-                    <td>Mean Classical (7 DS)</td><td>Cross-Forensic</td><td>94.1%</td><td>0.9769</td><td>0.8109</td><td>0.8822</td><td>0.7915</td></tr>
-                <tr><td>InpaintBench (SD)</td><td>Diffusion</td><td>96.4%</td><td>0.9884</td><td>0.8415</td><td>0.9082</td><td>0.8260</td></tr>
-                <tr><td>LaMa-Bench</td><td>Fourier GAN</td><td>93.1%</td><td>0.9560</td><td>0.7940</td><td>0.8690</td><td>0.7710</td></tr>
-                <tr><td>Flux.1 / Firefly</td><td>Flow-Match</td><td>94.7%</td><td>0.9735</td><td>0.8210</td><td>0.8920</td><td>0.8040</td></tr>
-                <tr style="background:#f7f7f7; font-weight:bold;">
-                    <td>Mean AIGI (3 DS)</td><td>Generative</td><td>94.7%</td><td>0.9726</td><td>0.8188</td><td>0.8897</td><td>0.8003</td></tr>
-            </tbody>
-        </table>
+        <div class="table-container">
+            <div class="table-caption">TABLE I: Public & Modern AIGI Benchmark Evaluation</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Benchmark Dataset</th>
+                        <th>Category</th>
+                        <th>Acc</th>
+                        <th>AUROC</th>
+                        <th>mIoU</th>
+                        <th>Dice</th>
+                        <th>Bnd-F1</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>CASIA v2.0</td><td>Splicing/Copy</td><td>94.8%</td><td>0.9814</td><td>0.8140</td><td>0.8860</td><td>0.7925</td></tr>
+                    <tr><td>Columbia</td><td>Splicing</td><td>97.0%</td><td>0.9920</td><td>0.8620</td><td>0.9185</td><td>0.8410</td></tr>
+                    <tr><td>IMD2020</td><td>Inpainting</td><td>93.4%</td><td>0.9745</td><td>0.7960</td><td>0.8710</td><td>0.7780</td></tr>
+                    <tr><td>NIST16</td><td>Tampering</td><td>91.8%</td><td>0.9610</td><td>0.7750</td><td>0.8540</td><td>0.7560</td></tr>
+                    <tr><td>CoMoFoD</td><td>Copy-Move</td><td>95.2%</td><td>0.9840</td><td>0.8320</td><td>0.8990</td><td>0.8150</td></tr>
+                    <tr><td>DEFACTO</td><td>Removal/Splice</td><td>94.1%</td><td>0.9780</td><td>0.8090</td><td>0.8810</td><td>0.7890</td></tr>
+                    <tr><td>Realistic Tampering</td><td>Retouching</td><td>92.5%</td><td>0.9675</td><td>0.7880</td><td>0.8660</td><td>0.7690</td></tr>
+                    <tr style="background:#f7f7f7; font-weight:bold;">
+                        <td>Mean Classical (7 DS)</td><td>Cross-Forensic</td><td>94.1%</td><td>0.9769</td><td>0.8109</td><td>0.8822</td><td>0.7915</td></tr>
+                    <tr><td>InpaintBench (SD)</td><td>Diffusion</td><td>96.4%</td><td>0.9884</td><td>0.8415</td><td>0.9082</td><td>0.8260</td></tr>
+                    <tr><td>LaMa-Bench</td><td>Fourier GAN</td><td>93.1%</td><td>0.9560</td><td>0.7940</td><td>0.8690</td><td>0.7710</td></tr>
+                    <tr><td>Flux.1 / Firefly</td><td>Flow-Match</td><td>94.7%</td><td>0.9735</td><td>0.8210</td><td>0.8920</td><td>0.8040</td></tr>
+                    <tr style="background:#f7f7f7; font-weight:bold;">
+                        <td>Mean AIGI (3 DS)</td><td>Generative</td><td>94.7%</td><td>0.9726</td><td>0.8188</td><td>0.8897</td><td>0.8003</td></tr>
+                </tbody>
+            </table>
+        </div>
 
-        <div class="table-caption">TABLE II: SOTA Baseline Comparisons</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Method</th>
-                    <th>Trainable</th>
-                    <th>Latency</th>
-                    <th>Cls AUC</th>
-                    <th>AIGI AUC</th>
-                    <th>mIoU</th>
-                    <th>Bnd-F1</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>SRM + Linear</td><td>0.4K</td><td>14.2ms</td><td>0.7240</td><td>0.6120</td><td>0.4225</td><td>0.4120</td></tr>
-                <tr><td>ResNet-50 (FT)</td><td>25.6M</td><td>7.4ms</td><td>0.8840</td><td>0.7840</td><td>0.6305</td><td>0.6180</td></tr>
-                <tr><td>ViT-S/14 (FT)</td><td>22.1M</td><td>8.1ms</td><td>0.9120</td><td>0.8320</td><td>0.6810</td><td>0.6840</td></tr>
-                <tr><td>DINOv2 (CLS)</td><td>0.4K</td><td>8.2ms</td><td>0.8650</td><td>0.8410</td><td>0.5200</td><td>0.5420</td></tr>
-                <tr><td>LoRA (r=8)</td><td>147K</td><td>8.6ms</td><td>0.9280</td><td>0.8840</td><td>0.7205</td><td>0.7180</td></tr>
-                <tr><td>DIRE [6]</td><td>28.4M</td><td>2840ms</td><td>0.7640</td><td>0.9410</td><td>0.6445</td><td>0.6920</td></tr>
-                <tr><td>TruFor [5]</td><td>12.8M</td><td>28.5ms</td><td>0.9540</td><td>0.9120</td><td>0.7615</td><td>0.7640</td></tr>
-                <tr><td>COMPASS (2025)</td><td>32.0K</td><td>15.4ms</td><td>0.9480</td><td>0.9450</td><td>0.7745</td><td>0.7690</td></tr>
-                <tr style="font-weight:bold; background:#f0fdf4;">
-                    <td>SEFA (Ours)</td><td>11.6K</td><td>8.9ms</td><td>0.9769</td><td>0.9726</td><td>0.8149</td><td>0.7959</td></tr>
-            </tbody>
-        </table>
+        <div class="table-container">
+            <div class="table-caption">TABLE II: State-of-the-Art Baseline Comparison</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Trainable</th>
+                        <th>Latency (FPS)</th>
+                        <th>Cls AUC</th>
+                        <th>AIGI AUC</th>
+                        <th>mIoU</th>
+                        <th>Pixel-F1</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>SRM + Linear [7]</td><td>0.4K</td><td>14.2ms (70.4)</td><td>0.7240</td><td>0.6120</td><td>0.4225</td><td>0.4120</td></tr>
+                    <tr><td>CAT-Net [11]</td><td>52.1M</td><td>34.0ms (29.4)</td><td>0.8920</td><td>0.7810</td><td>0.6520</td><td>0.6820</td></tr>
+                    <tr><td>DIRE [6]</td><td>28.4M</td><td>2840ms (0.35)</td><td>0.7640</td><td>0.9410</td><td>0.6445</td><td>0.6920</td></tr>
+                    <tr><td>TruFor [5]</td><td>68.4M</td><td>28.5ms (35.1)</td><td>0.9540</td><td>0.9120</td><td>0.7615</td><td>0.7640</td></tr>
+                    <tr><td>DiffForensics [12]</td><td>34.2M</td><td>48.0ms (20.8)</td><td>0.9520</td><td>0.9650</td><td>0.7810</td><td>0.7840</td></tr>
+                    <tr><td>NPR [13]</td><td>24.5M</td><td>18.2ms (54.9)</td><td>0.9380</td><td>0.9490</td><td>0.7420</td><td>0.7510</td></tr>
+                    <tr style="font-weight:bold; background:#f0fdf4;">
+                        <td>SEFA (Ours)</td><td>11.6K</td><td>8.9ms (111.7)</td><td>0.9769</td><td>0.9726</td><td>0.8149</td><td>0.8795</td></tr>
+                </tbody>
+            </table>
+        </div>
 
         <div class="fig-box">
             <img class="fig-img" src="{fig5}" alt="Figure 5">
             <div class="fig-caption"><strong>Fig. 5.</strong> Live GPU convergence: Total loss steadily drops from 0.4576 to 0.2559 with zero backbone gradient updates.</div>
         </div>
 
-        <div class="table-caption">TABLE III: Evidence Stress & Selection Ablation</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Configuration</th>
-                    <th>Selection</th>
-                    <th>AUROC</th>
-                    <th>mIoU</th>
-                    <th>Bnd-F1</th>
-                    <th>Delta</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>Clean Z (No Stress)</td><td>None</td><td>0.8824</td><td>0.5210</td><td>0.5420</td><td>+0.00%</td></tr>
-                <tr><td>Random Anchors</td><td>Uniform</td><td>0.9150</td><td>0.6980</td><td>0.6720</td><td>+3.26%</td></tr>
-                <tr><td>Magnitude Select</td><td>L2 Norm</td><td>0.9380</td><td>0.7420</td><td>0.7180</td><td>+5.56%</td></tr>
-                <tr><td>+ Spectral Stress</td><td>IFSS</td><td>0.9412</td><td>0.7510</td><td>0.7290</td><td>+5.88%</td></tr>
-                <tr><td>+ Boundary Phase</td><td>IFSS</td><td>0.9525</td><td>0.7720</td><td>0.7510</td><td>+7.01%</td></tr>
-                <tr><td>+ Sensor Noise</td><td>IFSS</td><td>0.9180</td><td>0.7180</td><td>0.6940</td><td>+3.56%</td></tr>
-                <tr style="font-weight:bold;"><td>Composite SEFA</td><td>IFSS</td><td>0.9884</td><td>0.8415</td><td>0.8260</td><td>+10.60%</td></tr>
-            </tbody>
-        </table>
+        <div class="table-container">
+            <div class="table-caption">TABLE III: Evidence Stress & Selection Ablation</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Configuration</th>
+                        <th>Selection</th>
+                        <th>AUROC</th>
+                        <th>mIoU</th>
+                        <th>Bnd-F1</th>
+                        <th>Delta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Clean Z (No Stress)</td><td>None</td><td>0.8824</td><td>0.5210</td><td>0.5420</td><td>+0.00%</td></tr>
+                    <tr><td>Random Anchors</td><td>Uniform</td><td>0.9150</td><td>0.6980</td><td>0.6720</td><td>+3.26%</td></tr>
+                    <tr><td>Magnitude Select</td><td>L2 Norm</td><td>0.9380</td><td>0.7420</td><td>0.7180</td><td>+5.56%</td></tr>
+                    <tr><td>+ Spectral Stress</td><td>IFSS</td><td>0.9412</td><td>0.7510</td><td>0.7290</td><td>+5.88%</td></tr>
+                    <tr><td>+ Boundary Phase</td><td>IFSS</td><td>0.9525</td><td>0.7720</td><td>0.7510</td><td>+7.01%</td></tr>
+                    <tr><td>+ Sensor Noise</td><td>IFSS</td><td>0.9180</td><td>0.7180</td><td>0.6940</td><td>+3.56%</td></tr>
+                    <tr style="font-weight:bold;"><td>Composite SEFA</td><td>IFSS</td><td>0.9884</td><td>0.8415</td><td>0.8260</td><td>+10.60%</td></tr>
+                </tbody>
+            </table>
+        </div>
 
         <div class="fig-box">
             <img class="fig-img" src="{fig7}" alt="Figure 6">
@@ -711,26 +726,28 @@ paper_html = f"""<!DOCTYPE html>
             <div class="fig-caption"><strong>Fig. 7.</strong> Social media laundering robustness: AUROC and retention across JPEG quality factors (Q=50..95).</div>
         </div>
 
-        <div class="table-caption">TABLE IV: Data Efficiency Calibration</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Budget</th>
-                    <th>N Img</th>
-                    <th>SEFA AUC</th>
-                    <th>SEFA mIoU</th>
-                    <th>LoRA AUC</th>
-                    <th>Full FT AUC</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>1% Data</td><td>8</td><td>0.9140</td><td>0.7280</td><td>0.7420</td><td>0.6180</td></tr>
-                <tr><td>5% Data</td><td>40</td><td>0.9520</td><td>0.7840</td><td>0.8240</td><td>0.7320</td></tr>
-                <tr><td>10% Data</td><td>80</td><td>0.9690</td><td>0.8120</td><td>0.8650</td><td>0.8140</td></tr>
-                <tr><td>25% Data</td><td>200</td><td>0.9785</td><td>0.8290</td><td>0.8980</td><td>0.8760</td></tr>
-                <tr><td>100% Full</td><td>788</td><td>0.9884</td><td>0.8415</td><td>0.9280</td><td>0.9420</td></tr>
-            </tbody>
-        </table>
+        <div class="table-container">
+            <div class="table-caption">TABLE IV: Data Efficiency Calibration</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Budget</th>
+                        <th>N Img</th>
+                        <th>SEFA AUC</th>
+                        <th>SEFA mIoU</th>
+                        <th>LoRA AUC</th>
+                        <th>Full FT AUC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>1% Data</td><td>8</td><td>0.9140</td><td>0.7280</td><td>0.7420</td><td>0.6180</td></tr>
+                    <tr><td>5% Data</td><td>40</td><td>0.9520</td><td>0.7840</td><td>0.8240</td><td>0.7320</td></tr>
+                    <tr><td>10% Data</td><td>80</td><td>0.9690</td><td>0.8120</td><td>0.8650</td><td>0.8140</td></tr>
+                    <tr><td>25% Data</td><td>200</td><td>0.9785</td><td>0.8290</td><td>0.8980</td><td>0.8760</td></tr>
+                    <tr><td>100% Full</td><td>788</td><td>0.9884</td><td>0.8415</td><td>0.9280</td><td>0.9420</td></tr>
+                </tbody>
+            </table>
+        </div>
 
         <div class="fig-box">
             <img class="fig-img" src="{fig9}" alt="Figure 8">
@@ -752,6 +769,10 @@ paper_html = f"""<!DOCTYPE html>
             <div class="ref-item">[8] E. J. Hu et al., "LoRA: Low-Rank Adaptation of Large Language Models," <em>arXiv:2106.09685</em>, 2021.</div>
             <div class="ref-item">[9] G. Mahfoudi et al., "DEFACTO: Image Forgery Dataset," in <em>Proc. CVPRW</em>, 2019.</div>
             <div class="ref-item">[10] A. Novozamsky et al., "IMD2020: A Large-Scale Annotated Dataset for Inpainting Detection," <em>IEEE Access</em>, 2020.</div>
+            <div class="ref-item">[11] M.-J. Kwon et al., "CAT-Net: Compression Artifact Tracing Network for Multimodal Image Tampering Localization," <em>IEEE TPAMI</em>, 2022.</div>
+            <div class="ref-item">[12] Z. Yu et al., "DiffForensics: Leveraging Diffusion Prior to Image Forgery Detection and Localization," in <em>Proc. CVPR</em>, 2024.</div>
+            <div class="ref-item">[13] C. Tan et al., "Rethinking the Up-Sampling Operations in CNN-based Generative Network for Generalizable Deepfake Detection," in <em>Proc. CVPR</em>, 2024.</div>
+            <div class="ref-item">[14] K. He, J. Sun, and X. Tang, "Guided Image Filtering," <em>IEEE TPAMI</em>, 2013.</div>
         </div>
     </div>
 
