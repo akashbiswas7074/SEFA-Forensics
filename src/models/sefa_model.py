@@ -134,8 +134,8 @@ class SEFAModel(nn.Module):
             cls_token=cls_token,
         )
 
-        # Step 6: Progressive decoding with boundary guidance for sharp 224x224 localization
-        refined_mask, mask_logits = self.progressive_decoder(feat_grid, x)
+        # Step 6: Progressive decoding with boundary guidance and patch prior for sharp 224x224 localization
+        refined_mask, mask_logits = self.progressive_decoder(feat_grid, x, patch_logits=patch_logits)
 
         details = None
         if return_details:

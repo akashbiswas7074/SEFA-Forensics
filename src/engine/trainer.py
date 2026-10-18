@@ -339,7 +339,7 @@ class SEFATrainer:
                         spatial_hw=it["hw"],
                         cls_token=cls_t,
                     )
-                    pred_masks, _ = self.model.progressive_decoder(feat_grid, imgs)
+                    pred_masks, _ = self.model.progressive_decoder(feat_grid, imgs, patch_logits=patch_logits)
 
                     loss_img = self.bce_img_fn(img_logits, lbls)
                     is_fake = (lbls == 1.0).squeeze(-1)
@@ -351,16 +351,20 @@ class SEFATrainer:
                         loss_dice = self.dice_loss_fn(fake_preds, fake_targets)
                         weights = fake_targets * 4.0 + 1.0
                         loss_mask_bce = F.binary_cross_entropy(fake_preds, fake_targets, weight=weights)
+                        # Multi-scale patch supervision
+                        target_patch = F.interpolate(fake_targets, size=it["hw"], mode="area")
+                        loss_patch_bce = F.binary_cross_entropy_with_logits(patch_logits[is_fake], target_patch)
                     else:
                         loss_dice = torch.tensor(0.0, device=self.device)
                         loss_mask_bce = torch.tensor(0.0, device=self.device)
+                        loss_patch_bce = torch.tensor(0.0, device=self.device)
 
                     if is_real.any():
-                        loss_clean = pred_masks[is_real].mean()
+                        loss_clean = pred_masks[is_real].mean() + torch.sigmoid(patch_logits[is_real]).mean()
                     else:
                         loss_clean = torch.tensor(0.0, device=self.device)
 
-                    loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.4 * loss_clean
+                    loss_loc = loss_dice + 0.4 * loss_mask_bce + 0.3 * loss_patch_bce + 0.4 * loss_clean
                     loss = self.bce_weight * loss_img + self.dice_weight * loss_loc
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_([p for p in self.model.parameters() if p.requires_grad], max_norm=1.0)
@@ -393,7 +397,7 @@ class SEFATrainer:
                             lbls = vit["label"].to(self.device)
 
                             ilg, plg, fg = self.model.router(acts, res, vit["hw"], cls_t)
-                            pmk, _ = self.model.progressive_decoder(fg, imgs)
+                            pmk, _ = self.model.progressive_decoder(fg, imgs, patch_logits=plg)
 
                             l_img = self.bce_img_fn(ilg, lbls)
                             v_tot_img += l_img.item()
@@ -411,7 +415,7 @@ class SEFATrainer:
 
                     val_img_loss = v_tot_img / max(1, v_nb)
                     val_dice_loss = (v_tot_dice / max(1, v_fake_nb)) if v_fake_nb > 0 else 0.0
-                    val_loss = val_img_loss + 0.4 * val_dice_loss
+                    val_loss = val_img_loss + 0.6 * val_dice_loss
                     v_y_true, v_y_scores = np.array(v_y_true), np.array(v_y_scores)
                     val_acc = np.mean((v_y_scores >= 0.5) == v_y_true)
                     log_str += f" | Val Loss: {val_loss:.4f} (Img: {val_img_loss:.4f}, Dice: {val_dice_loss:.4f}, Acc: {val_acc*100:.1f}%)"

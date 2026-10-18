@@ -87,15 +87,16 @@ class ForensicAnchorBank(nn.Module):
 
 class ProgressiveLocalizationDecoder(nn.Module):
     """
-    Progressive High-Resolution Localization Decoder (<10k parameters).
-    Decodes 16x16 patch anomaly embeddings into a high-resolution 224x224 mask:
-    16x16 (ch=32) -> intermediate 1/4 res (ch=16) -> full res (ch=16) + Sobel gradient -> full res (ch=1).
+    Progressive High-Resolution Localization Decoder (<12k parameters).
+    Decodes spatial anomaly grid and multi-quantile patch priors into a high-resolution 224x224 mask:
+    16x16 (ch=32) + 16x16 patch logit prior -> intermediate 1/4 res (ch=16) -> full res (ch=16) + Sobel gradient -> full res (ch=1).
     Bridges the ViT patch quantization bottleneck to produce crisp, boundary-aligned localization heatmaps.
     """
     def __init__(self, in_channels: int = 32, hidden_dim: int = 16):
         super().__init__()
+        self.patch_proj = nn.Conv2d(1, hidden_dim, kernel_size=3, padding=1)
         self.block1 = nn.Sequential(
-            nn.Conv2d(in_channels, hidden_dim, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels + hidden_dim, hidden_dim, kernel_size=3, padding=1),
             nn.BatchNorm2d(hidden_dim),
             nn.GELU(),
         )
@@ -112,10 +113,16 @@ class ProgressiveLocalizationDecoder(nn.Module):
         # Initialize final conv with slight negative bias for clean authentic background
         nn.init.constant_(self.final_conv[-1].bias, -0.5)
 
-    def forward(self, feat_grid: torch.Tensor, image: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        feat_grid: torch.Tensor,
+        image: torch.Tensor,
+        patch_logits: Optional[torch.Tensor] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         feat_grid: [B, in_channels, H_p, W_p] spatial feature grid from router
         image: [B, 3, H, W] normalized input image
+        patch_logits: [B, 1, H_p, W_p] optional multi-quantile patch prior logits
         Returns:
             pred_mask: [B, 1, H, W] in [0, 1]
             logits: [B, 1, H, W] continuous localization logits
@@ -123,9 +130,14 @@ class ProgressiveLocalizationDecoder(nn.Module):
         B, _, H, W = image.shape
         h_mid, w_mid = max(14, H // 4), max(14, W // 4)
 
-        # Step 1: Intermediate upsampling to 1/4 resolution (e.g. 56x56)
-        x1 = F.interpolate(feat_grid, size=(h_mid, w_mid), mode="bilinear", align_corners=False)
-        x1 = self.block1(x1)
+        # Step 1: Intermediate upsampling to 1/4 resolution (e.g. 56x56) with patch prior injection
+        x1_f = F.interpolate(feat_grid, size=(h_mid, w_mid), mode="bilinear", align_corners=False)
+        if patch_logits is not None:
+            p_mid = F.interpolate(patch_logits, size=(h_mid, w_mid), mode="bilinear", align_corners=False)
+        else:
+            p_mid = torch.zeros(B, 1, h_mid, w_mid, device=feat_grid.device, dtype=feat_grid.dtype)
+        p_feat = self.patch_proj(p_mid)
+        x1 = self.block1(torch.cat([x1_f, p_feat], dim=1))
 
         # Step 2: Full resolution upsampling (H, W)
         x2 = F.interpolate(x1, size=(H, W), mode="bilinear", align_corners=False)

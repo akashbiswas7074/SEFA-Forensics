@@ -580,28 +580,28 @@ def build_and_validate_notebook():
         "trainer = SEFATrainer(\n"
         "    model=model,\n"
         "    device=device,\n"
-        "    lr=1.0e-3,\n"
+        "    lr=1.5e-3,\n"
         "    weight_decay=1.0e-3,\n"
         "    bce_weight=1.0,\n"
-        "    dice_weight=0.5,\n"
+        "    dice_weight=1.2,\n"
         "    checkpoint_dir=os.path.join(project_root, \"checkpoints\")\n"
         ")\n\n"
-        "# Train for 12 epochs on real data (backbone frozen, router weights only)\n"
-        "history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=12, verbose=True, cache_backbone=True)"
+        "# Train for 15 epochs on real data (backbone frozen, router weights only)\n"
+        "history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=15, verbose=True, cache_backbone=True)"
     )
 
-    print("\n[*] Starting LIVE Router Training on Real Datasets (12 Epochs)...")
+    print("\n[*] Starting LIVE Router Training on Real Datasets (15 Epochs)...")
     trainer = SEFATrainer(
         model=model,
         device=device,
-        lr=1.0e-3,
+        lr=1.5e-3,
         weight_decay=1.0e-3,
         bce_weight=1.0,
-        dice_weight=1.0,
+        dice_weight=1.2,
         checkpoint_dir=os.path.join(proj_root, "checkpoints")
     )
     t_train_start = time.time()
-    history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=12, verbose=True, cache_backbone=True)
+    history = trainer.fit(train_loader=train_loader, val_loader=val_loader, epochs=15, verbose=True, cache_backbone=True)
     t_train_end = time.time()
     print(f"[✓] Live Training complete in {t_train_end - t_train_start:.1f}s.")
 
