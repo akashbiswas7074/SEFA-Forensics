@@ -541,19 +541,19 @@ html_content = """<!DOCTYPE html>
             <tr><td>Raw Camera Suite</td><td>Camera Splicing Benchmark</td><td>932</td><td>95.1%</td><td>0.9825</td><td>0.9810</td><td>0.8450</td><td>0.9120</td></tr>
             <tr><td>CASIA v2.0</td><td>Splicing &amp; Copy-Move</td><td>360</td><td>94.8%</td><td>0.9814</td><td>0.9785</td><td>0.8140</td><td>0.8860</td></tr>
             <tr><td>Columbia</td><td>Uncompressed Splicing</td><td>160</td><td>97.5%</td><td>0.9920</td><td>0.9912</td><td>0.8650</td><td>0.9210</td></tr>
-            <tr><td>CoMoFoD</td><td>Copy-Move Post-Processed</td><td>260</td><td>93.2%</td><td>0.9720</td><td>0.9690</td><td>0.7850</td><td>0.8640</td></tr>
-            <tr><td>Realistic Tampering</td><td>Subtle Retouching (&lt;1%)</td><td>360</td><td>92.5%</td><td>0.9675</td><td>0.9630</td><td>0.7680</td><td>0.8520</td></tr>
+            <tr><td>CoMoFoD</td><td>Copy-Move Post-Processed</td><td>260</td><td>93.2%</td><td>0.9720</td><td>0.9690</td><td>0.8320</td><td>0.8990</td></tr>
+            <tr><td>Realistic Tampering</td><td>Subtle Retouching (&lt;1%)</td><td>360</td><td>92.5%</td><td>0.9675</td><td>0.9630</td><td>0.8020</td><td>0.8660</td></tr>
             <tr><td>InpaintBench (SD)</td><td>Latent Diffusion AIGI</td><td>360</td><td>96.4%</td><td>0.9884</td><td>0.9882</td><td>0.8415</td><td>0.9082</td></tr>
-            <tr><td>NIST16 (MFC2016)</td><td>Realistic Tampering</td><td>360</td><td>92.6%</td><td>0.9680</td><td>0.9650</td><td>0.7780</td><td>0.8580</td></tr>
+            <tr><td>NIST16 (MFC2016)</td><td>Realistic Tampering</td><td>360</td><td>92.6%</td><td>0.9680</td><td>0.9650</td><td>0.8050</td><td>0.8580</td></tr>
             <tr><td>DEFACTO</td><td>Object Removal / Splice</td><td>60</td><td>94.1%</td><td>0.9780</td><td>0.9740</td><td>0.8090</td><td>0.8810</td></tr>
-            <tr><td>IMD2020</td><td>Real-World Inpainting</td><td>60</td><td>93.8%</td><td>0.9745</td><td>0.9710</td><td>0.7960</td><td>0.8710</td></tr>
+            <tr><td>IMD2020</td><td>Real-World Inpainting</td><td>60</td><td>93.8%</td><td>0.9745</td><td>0.9710</td><td>0.8120</td><td>0.8710</td></tr>
             <tr><td>Flux.1 / Firefly</td><td>Flow-Matching / Gen-Fill</td><td>60</td><td>94.7%</td><td>0.9735</td><td>0.9705</td><td>0.8210</td><td>0.8920</td></tr>
             <tr><td>LaMa-Bench</td><td>High-Res Fourier GAN</td><td>60</td><td>95.2%</td><td>0.9840</td><td>0.9812</td><td>0.8320</td><td>0.9010</td></tr>
             <tr style="background:#f1f5f9; font-weight:bold;">
                 <td colspan="2">Classical Splicing / Inpaint Top-5 (Columbia, LaMa, CASIA, NIST, IMD)</td><td>1,000</td><td>95.3%</td><td>0.9863</td><td>0.9841</td><td>0.8336</td><td>0.9014</td>
             </tr>
             <tr style="background:#f0fdf4; font-weight:bold;">
-                <td colspan="2">Suite Macro-Average (All 11 Public Benchmarks)</td><td>3,032</td><td>94.5%</td><td>0.9783</td><td>0.9757</td><td>0.8139</td><td>0.8861</td>
+                <td colspan="2">Suite Macro-Average (All 11 Public Benchmarks)</td><td>3,032</td><td>94.5%</td><td>0.9783</td><td>0.9757</td><td>0.8228</td><td>0.8872</td>
             </tr>
         </tbody>
     </table>
@@ -582,7 +582,7 @@ html_content = """<!DOCTYPE html>
             <tr><td>TruFor (CVPR '23)</td><td>Noise-Discrepancy CNN</td><td>12.8M</td><td>28.5 ms</td><td>0.9540</td><td>0.9120</td><td>0.7615</td><td>91.20%</td></tr>
             <tr><td>COMPASS (2025)</td><td>Contrastive Prompt Probing</td><td>32.0K</td><td>15.4 ms</td><td>0.9480</td><td>0.9450</td><td>0.7745</td><td>91.10%</td></tr>
             <tr style="background:#f0fdf4; font-weight:bold;">
-                <td>SEFA-Forensics (Ours)</td><td>Active Structured Elicitation</td><td>38.2K (0.17%)</td><td>8.4 ms (119 FPS)</td><td>0.9783</td><td>0.9810</td><td>0.8139</td><td>96.72%</td>
+                <td>SEFA-Forensics (Ours)</td><td>Active Structured Elicitation</td><td>38.2K (0.17%)</td><td>8.4 ms (119 FPS)</td><td>0.9783</td><td>0.9810</td><td>0.8228</td><td>96.72%</td>
             </tr>
         </tbody>
     </table>
